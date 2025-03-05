@@ -8,6 +8,7 @@ import {
   CompositeDecorator,
 } from "draft-js";
 import "draft-js/dist/Draft.css";
+import ReactMarkdown from "react-markdown";
 import "../styles/ReportEditor.css";
 import {
   FormatBold,
@@ -17,23 +18,25 @@ import {
   FormatAlignCenter,
   FormatAlignRight,
   FormatAlignJustify,
+  Visibility,
+  VisibilityOff
 } from "@mui/icons-material";
 import { MenuItem, Select } from "@mui/material";
+import MistakeSidebar from "./MistakeSidebar";
 
-// Strategy function: Finds "teh" and highlights it as an error.
+// Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
   const text = contentBlock.getText();
-  const regex = /teh/g;
-  let matchArr, start;
+  const regex = /\*\*(.*?)\*\*\s\((.*?)\)/g;
+  let matchArr;
   while ((matchArr = regex.exec(text)) !== null) {
-    start = matchArr.index;
-    callback(start, start + matchArr[0].length);
+    callback(matchArr.index, matchArr.index + matchArr[1].length);
   }
 };
 
-// Component to render error words with red underline.
+// Component to underline mistakes
 const ErrorSpan = (props) => (
-  <span className="error-span" title="Suggestion: the">
+  <span className="error-span" title={`Correction: ${props.children}`}>
     {props.children}
   </span>
 );
@@ -48,6 +51,9 @@ function ReportEditor() {
   );
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [loading, setLoading] = useState(false);
+  const [mistakes, setMistakes] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [formattedMarkdown, setFormattedMarkdown] = useState("");
 
   const handleEditorChange = (state) => {
     setEditorState(state);
@@ -57,7 +63,6 @@ function ReportEditor() {
     setEditorState(RichUtils.toggleInlineStyle(editorState, style));
   };
 
-  // Function to toggle text alignment
   const applyAlignment = (alignment) => {
     let blockType = "unstyled";
 
@@ -85,6 +90,10 @@ function ReportEditor() {
     setSelectedFont(event.target.value);
   };
 
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
+
   const handleEditReport = async () => {
     const content = editorState.getCurrentContent();
     const plainText = content.getPlainText();
@@ -97,19 +106,39 @@ function ReportEditor() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/correct-text", {
+      // 1️⃣ Correct the text first (updates editor content)
+      const correctResponse = await fetch("http://127.0.0.1:5000/correct-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: plainText }),
       });
 
-      const data = await response.json();
+      const correctData = await correctResponse.json();
 
-      if (response.ok) {
-        const correctedContent = ContentState.createFromText(data.corrected_text);
+      if (correctResponse.ok) {
+        const correctedContent = ContentState.createFromText(correctData.corrected_text);
         setEditorState(EditorState.createWithContent(correctedContent, decorator));
+        setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
       } else {
-        alert("Error: " + data.error);
+        alert("Error: " + correctData.error);
+        setLoading(false);
+        return;
+      }
+
+      // 2️⃣ Then detect mistakes (show in sidebar)
+      const mistakeResponse = await fetch("http://127.0.0.1:5000/identify-mistakes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: correctData.corrected_text }),
+      });
+
+      const mistakeData = await mistakeResponse.json();
+
+      if (mistakeResponse.ok) {
+        setMistakes(mistakeData.highlighted_text);
+        setSidebarOpen(true);
+      } else {
+        alert("Error: " + mistakeData.error);
       }
     } catch (error) {
       alert("Failed to connect to the backend.");
@@ -120,10 +149,9 @@ function ReportEditor() {
 
   return (
     <div className="editor-container">
-      {/* Fixed Toolbar Below Navbar */}
+      {/* Toolbar */}
       <div className="toolbar">
         <div className="toolbar-content">
-          {/* Font Selector */}
           <Select className="font-selector" value={selectedFont} onChange={handleFontChange}>
             <MenuItem value="Arial">Arial</MenuItem>
             <MenuItem value="Times New Roman">Times New Roman</MenuItem>
@@ -131,7 +159,7 @@ function ReportEditor() {
             <MenuItem value="Verdana">Verdana</MenuItem>
           </Select>
 
-          {/* Text Formatting Buttons */}
+          {/* Formatting */}
           <button className="toolbar-btn" onClick={() => applyStyle("BOLD")}>
             <FormatBold />
           </button>
@@ -142,7 +170,7 @@ function ReportEditor() {
             <FormatUnderlined />
           </button>
 
-          {/* Alignment Options (Now Functional) */}
+          {/* Alignment */}
           <button className="toolbar-btn" onClick={() => applyAlignment("left")}>
             <FormatAlignLeft />
           </button>
@@ -156,22 +184,42 @@ function ReportEditor() {
             <FormatAlignJustify />
           </button>
 
-          {/* "Edit Report" Button in the Toolbar */}
+          {/* Edit Button */}
           <button className="edit-btn" onClick={handleEditReport} disabled={loading}>
-            {loading ? "Editing..." : "Enhance The Report With AI"}
+            {loading ? "Editing..." : "Edit Report"}
+          </button>
+
+          {/* Sidebar Toggle Button */}
+          <button className="edit-btn toggle-sidebar-btn" onClick={toggleSidebar}>
+            {sidebarOpen ? <VisibilityOff /> : <Visibility />}
           </button>
         </div>
       </div>
 
-      {/* A4-styled Document Editor */}
+      {/* Editor with Markdown Display */}
       <div className="word-editor" style={{ fontFamily: selectedFont }}>
-        <Editor editorState={editorState} onChange={handleEditorChange} placeholder="Write your medical report here..." className="draft-editor" />
+        {formattedMarkdown ? (
+          <ReactMarkdown>{formattedMarkdown}</ReactMarkdown> // Display Markdown content
+        ) : (
+          <Editor editorState={editorState} onChange={handleEditorChange} placeholder="Write your medical report here..." />
+        )}
       </div>
+
+      {/* Sidebar */}
+      <MistakeSidebar mistakes={mistakes} isOpen={sidebarOpen} onToggle={toggleSidebar} onClose={() => setSidebarOpen(false)} />
     </div>
   );
 }
 
 export default ReportEditor;
+
+
+
+
+
+
+
+
 
 
 

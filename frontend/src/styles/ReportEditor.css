@@ -133,7 +133,12 @@
     text-align: justify;
   }
     
-  
+  /* Error Highlighting */
+.error-span {
+  text-decoration: underline red;
+  cursor: pointer;
+}
+
   
   
   

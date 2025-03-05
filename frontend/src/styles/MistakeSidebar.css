@@ -1,0 +1,63 @@
+/* src/styles/MistakeSidebar.css */
+.mistake-sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px; /* Initially hidden */
+    width: 300px;
+    height: 100%;
+    background: white;
+    box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+    z-index: 1000; /* Ensure it's on top */
+}
+
+.mistake-sidebar.open {
+    right: 0; /* Slide into view */
+}
+
+.mistake-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+/* Ensure Toggle and Close buttons are visible */
+.toggle-btn,
+.close-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    color: #333; /* Dark color for visibility */
+}
+
+/* Toggle button color change on hover */
+.toggle-btn:hover,
+.close-btn:hover {
+    color: #007bff; /* Blue highlight */
+}
+
+/* Styling for mistake text - Underlined in red & bold */
+.error-span {
+    font-weight: bold;
+    text-decoration: underline red;
+    cursor: pointer;
+}
+
+/* Ensure mistake list has proper spacing */
+.mistake-content {
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+
+
+
+
