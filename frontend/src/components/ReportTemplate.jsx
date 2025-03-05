@@ -1,102 +1,134 @@
 // src/components/ReportTemplate.js
-import React, { useState } from 'react';
-import '../styles/ReportTemplate.css';
+import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import "../styles/ReportTemplate.css";
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
-    patientName: '',
-    age: '',
-    symptoms: '',
-    diagnosis: '',
-    treatment: ''
+    patientName: "",
+    age: "",
+    chiefComplaint: "",
+    historyOfPresentIllness: "",
+    pastMedicalHistory: "",
+    familyHistory: "",
+    medications: "",
+    allergies: "",
+    reviewOfSystems: "",
+    physicalExamination: "",
+    investigations: "",
+    assessmentPlan: "",
+    doctorSignature: "",
   });
-  const [compiledReport, setCompiledReport] = useState('');
+
+  const [compiledReport, setCompiledReport] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
+    setFormData((prevData) => ({
       ...prevData,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API call: Compile the report from the form data.
-    const report = `
-Medical Report for ${formData.patientName}
-Age: ${formData.age}
-Symptoms: ${formData.symptoms}
-Diagnosis: ${formData.diagnosis}
-Treatment: ${formData.treatment}
 
-Recommendations: Please follow up with a specialist.
-    `;
-    setCompiledReport(report);
+    // Check if any required fields are empty
+    for (const key in formData) {
+      if (!formData[key].trim()) {
+        alert(`Please fill in the ${key.replace(/([A-Z])/g, " $1").trim()} field.`);
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/compile-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCompiledReport(data.compiled_report);
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (error) {
+      alert("Failed to connect to the backend.");
+    }
+
+    setLoading(false);
+  };
+
+  const handleClear = () => {
+    setFormData({
+      patientName: "",
+      age: "",
+      chiefComplaint: "",
+      historyOfPresentIllness: "",
+      pastMedicalHistory: "",
+      familyHistory: "",
+      medications: "",
+      allergies: "",
+      reviewOfSystems: "",
+      physicalExamination: "",
+      investigations: "",
+      assessmentPlan: "",
+      doctorSignature: "",
+    });
+    setCompiledReport(""); // Clear generated report
   };
 
   return (
-    <div className="template-container">
-      <h2>Medical Report Template</h2>
-      <form onSubmit={handleSubmit} className="report-form">
-        <label>
-          Patient Name:
-          <input 
-            type="text" 
-            name="patientName" 
-            value={formData.patientName} 
-            onChange={handleChange} 
-            required 
-          />
-        </label>
-        <label>
-          Age:
-          <input 
-            type="number" 
-            name="age" 
-            value={formData.age} 
-            onChange={handleChange} 
-            required 
-          />
-        </label>
-        <label>
-          Symptoms:
-          <textarea 
-            name="symptoms" 
-            value={formData.symptoms} 
-            onChange={handleChange} 
-            required 
-          />
-        </label>
-        <label>
-          Diagnosis:
-          <textarea 
-            name="diagnosis" 
-            value={formData.diagnosis} 
-            onChange={handleChange} 
-            required 
-          />
-        </label>
-        <label>
-          Treatment:
-          <textarea 
-            name="treatment" 
-            value={formData.treatment} 
-            onChange={handleChange} 
-            required 
-          />
-        </label>
-        <button type="submit">Generate Report</button>
-      </form>
-      {compiledReport && (
-        <div className="compiled-report">
-          <h3>Compiled Medical Report</h3>
-          <pre>{compiledReport}</pre>
+    <div className="report-container">
+      {/* Fixed Toolbar Below Navbar */}
+      <div className="toolbar">
+        <h2>Medical Report Editor</h2>
+        <div className="toolbar-buttons">
+          <button className={`generate-btn ${loading ? "loading" : ""}`} onClick={handleSubmit} disabled={loading}>
+            {loading ? "Start Generating..." : "Generate Report"}
+          </button>
+          <button className="clear-btn" onClick={handleClear}>Clear Fields</button>
         </div>
-      )}
+      </div>
+
+      {/* Two-Column Layout */}
+      <div className="page-content">
+        {/* Left Column - Form */}
+        <div className="report-form-container">
+          <form className="report-form">
+            {Object.keys(formData).map((key) => (
+              <div key={key}>
+                <label>{key.replace(/([A-Z])/g, " $1").trim()}:</label>
+                <textarea name={key} value={formData[key]} onChange={handleChange} required />
+              </div>
+            ))}
+          </form>
+        </div>
+
+        {/* Right Column - AI Generated Report */}
+        {compiledReport && (
+          <div className="compiled-report">
+            <h3>Compiled Medical Report</h3>
+            <ReactMarkdown>{compiledReport}</ReactMarkdown>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default ReportTemplate;
+
+
+
+
+
+
+
 

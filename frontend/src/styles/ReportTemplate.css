@@ -1,40 +1,139 @@
 /* src/styles/ReportTemplate.css */
-.template-container {
-    margin: 20px;
-  }
-  .report-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .report-form label {
-    font-weight: bold;
-  }
-  .report-form input,
-  .report-form textarea {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  button {
-    margin-top: 10px;
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  button:hover {
-    background-color: #218838;
-  }
-  .compiled-report {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    background-color: #f9f9f9;
-    white-space: pre-wrap;
-  }
-  
+
+.report-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  background-color: #f4f4f4; /* Page Background */
+  padding-top: 100px; /* Adjusted for Navbar space */
+}
+
+/* Fixed Toolbar Below Navbar */
+.toolbar {
+  position: fixed;
+  top: 75px; /* Positioned below Navbar */
+  width: 100%;
+  background: #f4f4f4; /* Matched to page background */
+  color: #333;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: center; /* Center toolbar content */
+  align-items: center;
+  gap: 20px; /* Adds spacing between title and button */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+/* Centering Title */
+.toolbar h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Buttons Container - Centered */
+.toolbar-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Generate & Clear Buttons */
+.generate-btn, .clear-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+.generate-btn.loading {
+  background: red;
+}
+
+.generate-btn:hover, .clear-btn:hover {
+  background: #218838;
+}
+
+/* A4 Canvas for Form */
+.report-form-container {
+  background: white;
+  width: 794px; /* A4 width */
+  min-height: 1400px; /* Adjusted height */
+  padding: 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  margin-top: 20px; /* Reduced gap */
+  border-radius: 5px;
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* Restored Field Sizes to Fit Data */
+input {
+  width: 100%;
+  padding: 6px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  padding: 6px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* Specific Textarea Sizes Based on Content */
+textarea[name="chiefComplaint"],
+textarea[name="historyOfPresentIllness"],
+textarea[name="pastMedicalHistory"],
+textarea[name="familyHistory"],
+textarea[name="reviewOfSystems"],
+textarea[name="physicalExamination"],
+textarea[name="investigations"],
+textarea[name="assessmentPlan"] {
+  min-height: 80px;
+}
+
+textarea[name="medications"],
+textarea[name="allergies"],
+textarea[name="doctorSignature"] {
+  min-height: 50px;
+}
+
+/* A4 Report Canvas */
+.compiled-report {
+  width: 794px;
+  min-height: 1200px;
+  background: white;
+  padding: 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  margin-top: 30px; /* Reduced gap */
+  border-radius: 5px;
+  white-space: pre-wrap;
+  font-family: "Courier New", monospace;
+  border-left: 5px solid #007bff;
+}
+
+
+
+
+
