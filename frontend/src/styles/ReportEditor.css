@@ -1,143 +1,165 @@
 /* src/styles/ReportEditor.css */
 .editor-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #f4f4f4;
-    min-height: 100vh;
-    padding: 0;
-    margin: 0;
-  }
-  
-  /* Fixed Toolbar Below Navbar with Proper Centered Layout */
-  .toolbar {
-    position: fixed;
-    top: 75px; /* Space below navbar */
-    left: 0;
-    width: 100%;
-    background-color: #ececec;
-    padding: 6px 10px; /* Compact height */
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Center align buttons and icons */
-    gap: 10px; /* Reduce spacing between buttons */
-    border-bottom: 2px solid #d0d0d0;
-    z-index: 100;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    height: 40px; /* Reduce toolbar height */
-  }
-  
-  /* Centered Toolbar Wrapper */
-  .toolbar-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 80%; /* Ensure alignment in center */
-  }
-  
-  /* Font Selector - Increased Width, Reduced Height */
-  .font-selector {
-    background: white;
-    border-radius: 4px;
-    padding: 3px;
-    font-size: 14px;
-    outline: none;
-    cursor: pointer;
-    min-width: 140px; /* Increased width */
-    height: 28px; /* Reduced height */
-  }
-  
-  /* Toolbar Buttons */
-  .toolbar-btn {
-    border: none;
-    background-color: white;
-    color: black;
-    padding: 6px;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background 0.2s ease-in-out;
-    display: flex;
-    align-items: center;
-    height: 28px;
-    width: 32px;
-    justify-content: center;
-  }
-  
-  .toolbar-btn:hover {
-    background-color: #d0d0d0;
-  }
-  
-  /* Edit Report Button */
-  .edit-btn {
-    padding: 6px 10px;
-    background-color: #007bff;;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    height: 30px;
-    margin-left: 20px;
-  }
-  
-  .edit-btn:hover {
-    background-color:  #007bff;;
-  }
-  
-  /* Microsoft Word-style A4 Document */
-  .word-editor {
-    width: 794px;
-    min-height: 1123px;
-    background: white;
-    padding: 40px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    font-family: "Arial", sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    margin-top: 80px; /* Increased gap below the toolbar */
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* Editor Text */
-  .draft-editor {
-    border: none;
-    min-height: 1000px;
-    outline: none;
-    word-wrap: break-word;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Error Highlighting */
-  .error-span {
-    text-decoration: underline red;
-    cursor: pointer;
-  }
-/* Custom Alignment Styles for Draft.js */
-.public-DraftStyleDefault-block {
-    text-align: left; /* Default */
-  }
-  
-  .center-align {
-    text-align: center;
-  }
-  
-  .right-align {
-    text-align: right;
-  }
-  
-  .justify-align {
-    text-align: justify;
-  }
-    
-  /* Error Highlighting */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #e0e0e0; /* Light grey background */
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+/* Fixed Toolbar Below Navbar with Proper Centered Layout */
+.toolbar {
+  position: fixed;
+  top: 75px; /* Space below navbar */
+  left: 0;
+  width: 100%;
+  background-color: #d9d9d9; /* Light grey to match background */
+  padding: 6px 10px; /* Compact height */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center align buttons and icons */
+  gap: 10px; /* Reduce spacing between buttons */
+  border-bottom: 2px solid #c0c0c0;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  height: 40px; /* Reduce toolbar height */
+}
+
+/* Centered Toolbar Wrapper */
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 80%; /* Ensure alignment in center */
+}
+
+/* Font Selector - Increased Width, Reduced Height */
+.font-selector {
+  background: white;
+  border-radius: 4px;
+  padding: 3px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  min-width: 140px; /* Increased width */
+  height: 28px; /* Reduced height */
+}
+
+/* Toolbar Buttons */
+.toolbar-btn {
+  border: none;
+  background-color: white;
+  color: black;
+  padding: 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  width: 32px;
+  justify-content: center;
+}
+
+.toolbar-btn:hover {
+  background-color: #c0c0c0;
+}
+
+/* Edit Report Button */
+.edit-btn {
+  padding: 6px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  height: 30px;
+  margin-left: 20px;
+}
+
+.edit-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Microsoft Word-style A4 Document */
+.word-editor {
+  width: 794px;
+  min-height: 1123px;
+  background: white;
+  padding: 40px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  font-family: "Arial", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  margin-top: 80px; /* Increased gap below the toolbar */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Editor Text */
+.draft-editor {
+  border: none;
+  min-height: 1000px;
+  outline: none;
+  word-wrap: break-word;
+  margin: 0;
+  padding: 0;
+}
+
+/* Error Highlighting */
 .error-span {
   text-decoration: underline red;
   cursor: pointer;
 }
+
+/* Custom Alignment Styles for Draft.js */
+.public-DraftStyleDefault-block {
+  text-align: left; /* Default */
+}
+
+.center-align {
+  text-align: center;
+}
+
+.right-align {
+  text-align: right;
+}
+
+.justify-align {
+  text-align: justify;
+}
+
+/* Sidebar Styles */
+.mistake-sidebar {
+  position: fixed;
+  right: 0;
+  top: 75px;
+  width: 300px;
+  height: calc(100vh - 75px);
+  background: #d9d9d9; /* Light grey for sidebar */
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  overflow-y: auto;
+  transition: transform 0.3s ease-in-out;
+}
+
+.mistake-sidebar.hidden {
+  transform: translateX(100%);
+}
+
+/* Error Highlighting */
+.error-span {
+  text-decoration: underline red;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
 
   
   

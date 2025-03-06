@@ -1,14 +1,16 @@
-// src/components/ReportEditor.js
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Editor,
   EditorState,
   ContentState,
   RichUtils,
   CompositeDecorator,
+  Modifier,
+  convertFromRaw,
+  convertToRaw,
 } from "draft-js";
 import "draft-js/dist/Draft.css";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown from "react-markdown"; // ✅ ReactMarkdown is now correctly used!
 import "../styles/ReportEditor.css";
 import {
   FormatBold,
@@ -19,12 +21,19 @@ import {
   FormatAlignRight,
   FormatAlignJustify,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
 } from "@mui/icons-material";
 import { MenuItem, Select } from "@mui/material";
+import { FaDownload } from "react-icons/fa";
 import MistakeSidebar from "./MistakeSidebar";
+import PDFDownloader from "./PdfDownloader";
 
-// Error detection strategy
+// ✅ Local Storage Keys
+const REPORT_STORAGE_KEY = "savedReportContent";
+const FORMATTED_STORAGE_KEY = "savedFormattedMarkdown";
+const MISTAKES_STORAGE_KEY = "savedMistakes";
+
+// ✅ Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
   const text = contentBlock.getText();
   const regex = /\*\*(.*?)\*\*\s\((.*?)\)/g;
@@ -34,7 +43,7 @@ const errorStrategy = (contentBlock, callback) => {
   }
 };
 
-// Component to underline mistakes
+// ✅ Component to underline mistakes
 const ErrorSpan = (props) => (
   <span className="error-span" title={`Correction: ${props.children}`}>
     {props.children}
@@ -42,10 +51,16 @@ const ErrorSpan = (props) => (
 );
 
 function ReportEditor() {
-  const decorator = new CompositeDecorator([
-    { strategy: errorStrategy, component: ErrorSpan },
-  ]);
+  // ✅ Memoize `decorator` to prevent re-renders
+  const decorator = useMemo(
+    () =>
+      new CompositeDecorator([
+        { strategy: errorStrategy, component: ErrorSpan },
+      ]),
+    []
+  );
 
+  // ✅ Initialize State
   const [editorState, setEditorState] = useState(
     EditorState.createEmpty(decorator)
   );
@@ -55,35 +70,59 @@ function ReportEditor() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [formattedMarkdown, setFormattedMarkdown] = useState("");
 
+  // ✅ Restore saved report from LocalStorage when component loads
+  useEffect(() => {
+    const savedContent = localStorage.getItem(REPORT_STORAGE_KEY);
+    const savedFormatted = localStorage.getItem(FORMATTED_STORAGE_KEY);
+    const savedMistakes = localStorage.getItem(MISTAKES_STORAGE_KEY);
+
+    if (savedContent) {
+      const restoredContent = convertFromRaw(JSON.parse(savedContent));
+      setEditorState(EditorState.createWithContent(restoredContent, decorator));
+    }
+
+    if (savedFormatted) setFormattedMarkdown(savedFormatted);
+    if (savedMistakes) setMistakes(JSON.parse(savedMistakes));
+  }, [decorator]);
+
+  // ✅ Save report content in LocalStorage on changes
+  useEffect(() => {
+    const contentState = editorState.getCurrentContent();
+    const rawContent = JSON.stringify(convertToRaw(contentState));
+    localStorage.setItem(REPORT_STORAGE_KEY, rawContent);
+    localStorage.setItem(FORMATTED_STORAGE_KEY, formattedMarkdown);
+    localStorage.setItem(MISTAKES_STORAGE_KEY, JSON.stringify(mistakes));
+  }, [editorState, formattedMarkdown, mistakes]);
+
+  // ✅ Handle Editor Change
   const handleEditorChange = (state) => {
     setEditorState(state);
   };
 
-  const applyStyle = (style) => {
+  // ✅ Fully Functional Formatting
+  const toggleInlineStyle = (style) => {
     setEditorState(RichUtils.toggleInlineStyle(editorState, style));
   };
 
-  const applyAlignment = (alignment) => {
-    let blockType = "unstyled";
-
-    switch (alignment) {
-      case "left":
-        blockType = "unstyled";
-        break;
-      case "center":
-        blockType = "center-align";
-        break;
-      case "right":
-        blockType = "right-align";
-        break;
-      case "justify":
-        blockType = "justify-align";
-        break;
-      default:
-        blockType = "unstyled";
-    }
-
+  // ✅ Functional Alignment Buttons
+  const toggleBlockType = (blockType) => {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
+  };
+
+  // ✅ Delete/Backspace Works
+  const deleteSelection = () => {
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      const content = editorState.getCurrentContent();
+      const newContentState = Modifier.removeRange(
+        content,
+        selection,
+        "backward"
+      );
+      setEditorState(
+        EditorState.push(editorState, newContentState, "remove-range")
+      );
+    }
   };
 
   const handleFontChange = (event) => {
@@ -107,17 +146,24 @@ function ReportEditor() {
 
     try {
       // 1️⃣ Correct the text first (updates editor content)
-      const correctResponse = await fetch("http://127.0.0.1:5000/correct-text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: plainText }),
-      });
+      const correctResponse = await fetch(
+        "http://127.0.0.1:5000/correct-text",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: plainText }),
+        }
+      );
 
       const correctData = await correctResponse.json();
 
       if (correctResponse.ok) {
-        const correctedContent = ContentState.createFromText(correctData.corrected_text);
-        setEditorState(EditorState.createWithContent(correctedContent, decorator));
+        const correctedContent = ContentState.createFromText(
+          correctData.corrected_text
+        );
+        setEditorState(
+          EditorState.createWithContent(correctedContent, decorator)
+        );
         setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
       } else {
         alert("Error: " + correctData.error);
@@ -126,11 +172,14 @@ function ReportEditor() {
       }
 
       // 2️⃣ Then detect mistakes (show in sidebar)
-      const mistakeResponse = await fetch("http://127.0.0.1:5000/identify-mistakes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: correctData.corrected_text }),
-      });
+      const mistakeResponse = await fetch(
+        "http://127.0.0.1:5000/identify-mistakes",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: correctData.corrected_text }),
+        }
+      );
 
       const mistakeData = await mistakeResponse.json();
 
@@ -152,7 +201,11 @@ function ReportEditor() {
       {/* Toolbar */}
       <div className="toolbar">
         <div className="toolbar-content">
-          <Select className="font-selector" value={selectedFont} onChange={handleFontChange}>
+          <Select
+            className="font-selector"
+            value={selectedFont}
+            onChange={handleFontChange}
+          >
             <MenuItem value="Arial">Arial</MenuItem>
             <MenuItem value="Times New Roman">Times New Roman</MenuItem>
             <MenuItem value="Calibri">Calibri</MenuItem>
@@ -160,72 +213,105 @@ function ReportEditor() {
           </Select>
 
           {/* Formatting */}
-          <button className="toolbar-btn" onClick={() => applyStyle("BOLD")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleInlineStyle("BOLD")}
+          >
             <FormatBold />
           </button>
-          <button className="toolbar-btn" onClick={() => applyStyle("ITALIC")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleInlineStyle("ITALIC")}
+          >
             <FormatItalic />
           </button>
-          <button className="toolbar-btn" onClick={() => applyStyle("UNDERLINE")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleInlineStyle("UNDERLINE")}
+          >
             <FormatUnderlined />
           </button>
 
           {/* Alignment */}
-          <button className="toolbar-btn" onClick={() => applyAlignment("left")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleBlockType("unstyled")}
+          >
             <FormatAlignLeft />
           </button>
-          <button className="toolbar-btn" onClick={() => applyAlignment("center")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleBlockType("center-align")}
+          >
             <FormatAlignCenter />
           </button>
-          <button className="toolbar-btn" onClick={() => applyAlignment("right")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleBlockType("right-align")}
+          >
             <FormatAlignRight />
           </button>
-          <button className="toolbar-btn" onClick={() => applyAlignment("justify")}>
+          <button
+            className="toolbar-btn"
+            onClick={() => toggleBlockType("justify-align")}
+          >
             <FormatAlignJustify />
           </button>
 
+          {/* Delete Selection */}
+          <button className="toolbar-btn" onClick={deleteSelection}>
+            🗑️
+          </button>
+
           {/* Edit Button */}
-          <button className="edit-btn" onClick={handleEditReport} disabled={loading}>
+          <button
+            className="edit-btn"
+            onClick={handleEditReport}
+            disabled={loading}
+          >
             {loading ? "Editing..." : "Edit Report"}
           </button>
 
           {/* Sidebar Toggle Button */}
-          <button className="edit-btn toggle-sidebar-btn" onClick={toggleSidebar}>
+          <button
+            className="edit-btn toggle-sidebar-btn"
+            onClick={toggleSidebar}
+          >
             {sidebarOpen ? <VisibilityOff /> : <Visibility />}
           </button>
+
+          {/* ✅ Download Button */}
+          <PDFDownloader
+            content={formattedMarkdown}
+            fileName="Medical_Report.pdf"
+          >
+            <FaDownload />
+          </PDFDownloader>
         </div>
       </div>
 
-      {/* Editor with Markdown Display */}
+      {/* Editor or Markdown Preview */}
       <div className="word-editor" style={{ fontFamily: selectedFont }}>
         {formattedMarkdown ? (
-          <ReactMarkdown>{formattedMarkdown}</ReactMarkdown> // Display Markdown content
+          <ReactMarkdown>{formattedMarkdown}</ReactMarkdown>
         ) : (
-          <Editor editorState={editorState} onChange={handleEditorChange} placeholder="Write your medical report here..." />
+          <Editor
+            editorState={editorState}
+            onChange={handleEditorChange}
+            placeholder="Write your medical report here..."
+          />
         )}
       </div>
 
       {/* Sidebar */}
-      <MistakeSidebar mistakes={mistakes} isOpen={sidebarOpen} onToggle={toggleSidebar} onClose={() => setSidebarOpen(false)} />
+      <MistakeSidebar
+        mistakes={mistakes}
+        isOpen={sidebarOpen}
+        onToggle={toggleSidebar}
+        onClose={() => setSidebarOpen(false)}
+      />
     </div>
   );
 }
 
 export default ReportEditor;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
