@@ -43,7 +43,7 @@ function ReportTemplate() {
 
     try {
       // Send data to the backend for structured report generation
-      const response = await fetch("http://127.0.0.1:5000/compile-report", {
+      const response = await fetch("https://medical-report-editor-ai-powered-backend.onrender.com/compile-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
