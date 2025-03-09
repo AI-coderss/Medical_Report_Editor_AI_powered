@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Enable CORS for frontend communication (React running on localhost:3000)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dsah.onrender.com"}})
 
 # Get OpenAI API key from .env file
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
