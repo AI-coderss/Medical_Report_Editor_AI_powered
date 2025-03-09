@@ -269,7 +269,7 @@ function ReportEditor() {
             onClick={handleEditReport}
             disabled={loading}
           >
-            {loading ? "Editing..." : "Edit Report"}
+            {loading ? "Editing..." : "Enhance Report with AI"}
           </button>
 
           {/* Sidebar Toggle Button */}
