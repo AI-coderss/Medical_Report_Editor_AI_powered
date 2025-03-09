@@ -108,6 +108,17 @@ function ReportEditor() {
   const toggleBlockType = (blockType) => {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
   };
+  const handleClearReport = () => {
+    setEditorState(EditorState.createEmpty(new CompositeDecorator([
+      { strategy: errorStrategy, component: ErrorSpan }
+    ]))); // Reset with a new decorator instance
+    setFormattedMarkdown(""); // Clear formatted Markdown preview
+    setMistakes(null); // Clear mistakes
+    localStorage.removeItem(REPORT_STORAGE_KEY);
+    localStorage.removeItem(FORMATTED_STORAGE_KEY);
+    localStorage.removeItem(MISTAKES_STORAGE_KEY);
+  };
+  
 
   // ✅ Delete/Backspace Works
   const deleteSelection = () => {
@@ -262,6 +273,13 @@ function ReportEditor() {
           <button className="toolbar-btn" onClick={deleteSelection}>
             🗑️
           </button>
+            {/* ✅ Download Button */}
+            <PDFDownloader
+            content={formattedMarkdown}
+            fileName="Medical_Report.pdf"
+          >
+            <FaDownload />
+          </PDFDownloader>
 
           {/* Edit Button */}
           <button
@@ -271,6 +289,10 @@ function ReportEditor() {
           >
             {loading ? "Editing..." : "Enhance Report with AI"}
           </button>
+          {/* ✅ Clear Button */}
+          <button className="edit-btn clear-btn" onClick={handleClearReport}>
+            Clear 🧹
+          </button>
 
           {/* Sidebar Toggle Button */}
           <button
@@ -279,14 +301,6 @@ function ReportEditor() {
           >
             {sidebarOpen ? <VisibilityOff /> : <Visibility />}
           </button>
-
-          {/* ✅ Download Button */}
-          <PDFDownloader
-            content={formattedMarkdown}
-            fileName="Medical_Report.pdf"
-          >
-            <FaDownload />
-          </PDFDownloader>
         </div>
       </div>
 
