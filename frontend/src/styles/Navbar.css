@@ -84,9 +84,11 @@
     height: 75px;
     width: 800px;
     position: absolute;
-    right: 0;
+    right: 25%;
     top: 0;
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     
   }
    .navItem.active {
@@ -102,6 +104,7 @@
     z-index: 2;
     cursor: pointer;
     margin: 0;
+    left: 50px;
     user-select: none;
     color: white; /* Default color for unselected items */
     transition: color 0.3s ease;
