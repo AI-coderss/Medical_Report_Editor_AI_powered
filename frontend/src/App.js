@@ -1,6 +1,6 @@
 // src/components/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ReportEditor from './components/ReportEditor';
 import Navbar from './components/Navbar';
 import ReportTemplate from './components/ReportTemplate';
@@ -12,6 +12,8 @@ function App() {
       <Navbar />
       <main>
         <Routes>
+          {/* Default route to redirect '/' to '/editor' */}
+          <Route path="/" element={<Navigate to="/editor" />} />
           <Route path="/editor" element={<ReportEditor />} />
           <Route path="/template" element={<ReportTemplate />} />
           <Route path="/upload-report" element={<UploadReport />} />
@@ -23,4 +25,5 @@ function App() {
 }
 
 export default App;
+
 
