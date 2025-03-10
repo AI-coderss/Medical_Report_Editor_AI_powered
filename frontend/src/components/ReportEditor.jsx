@@ -303,7 +303,6 @@ function ReportEditor() {
           </button>
         </div>
       </div>
-
       {/* Editor or Markdown Preview */}
       <div className="word-editor" style={{ fontFamily: selectedFont }}>
         {formattedMarkdown ? (

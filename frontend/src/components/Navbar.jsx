@@ -57,32 +57,37 @@ const Navbar = () => {
           </div>
           {menuOpen && (
             <div className="dropdownMenu">
-              {["Editor ✍️", "Templates 📋", "Settings ⚙️"].map(
-                (label, index) => (
-                  <Link
-                    to={
-                      index === 0
-                        ? "/editor"
-                        : index === 1
-                        ? "/template"
-                        : "/settings"
-                    }
-                    key={index}
-                    className={`mobileNavItem ${
-                      activeIndex === index ? "active" : ""
-                    }`}
-                    onClick={() => handleNavigation(index)}
-                  >
-                    {label}
-                  </Link>
-                )
-              )}
+              {[
+                "Editor ✍️",
+                "Templates 📋",
+                "Upload Report 📤",
+                "Settings ⚙️",
+              ].map((label, index) => (
+                <Link
+                  to={
+                    index === 0
+                      ? "/editor"
+                      : index === 1
+                      ? "/template"
+                      : index === 2
+                      ? "/upload-report"
+                      : "/settings"
+                  }
+                  key={index}
+                  className={`mobileNavItem ${
+                    activeIndex === index ? "active" : ""
+                  }`}
+                  onClick={() => handleNavigation(index)}
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
           )}
         </div>
       ) : (
         <div className="navItemContainer">
-          {["Editor ✍️", "Templates 📋", "Settings ⚙️"].map(
+          {["Editor ✍️", "Templates 📋", "Upload Report 📤", "Settings ⚙️"].map(
             (label, index) => (
               <Link
                 to={
@@ -90,6 +95,8 @@ const Navbar = () => {
                     ? "/editor"
                     : index === 1
                     ? "/template"
+                    : index === 2
+                    ? "/upload-report"
                     : "/settings"
                 }
                 key={index}

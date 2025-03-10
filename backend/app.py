@@ -3,6 +3,7 @@ from openai import OpenAI
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
+import fitz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -146,6 +147,61 @@ def compile_report():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    # ✅ 4️⃣ Process PDF Report and Convert to Structured Format
+@app.route('/process-pdf', methods=['POST'])
+def process_pdf():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file = request.files['file']
+
+        # Validate file type
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "Invalid file format. Please upload a PDF"}), 400
+
+        # Read PDF and extract text
+        pdf_text = extract_text_from_pdf(file)
+
+        if not pdf_text.strip():
+            return jsonify({"error": "Extracted text is empty"}), 400
+
+        # Process extracted text with OpenAI
+        structured_prompt = f"""
+        You are a medical AI assistant. Convert the following extracted medical report into a **well-structured, formatted, and professional** document:
+
+        **Formatting Instructions:**
+        - **Ensure each section title is bold (Chief Complaint, HPI, etc.).**
+        - **Maintain clinical terminology and ensure medical coherence.**
+        - **Remove unnecessary noise, page numbers, and artifacts from OCR extraction.**
+
+        Extracted Report:
+        {pdf_text}
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": structured_prompt}]
+        )
+
+        structured_text = response.choices[0].message.content.strip()
+        return jsonify({"structured_text": structured_text})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ✅ Helper Function: Extract Text from PDF
+def extract_text_from_pdf(file):
+    try:
+        text = ""
+        with fitz.open(stream=file.read(), filetype="pdf") as doc:
+            for page in doc:
+                text += page.get_text("text") + "\n"
+        return text
+    except Exception as e:
+        return f"Error extracting text: {str(e)}"
+
 
 if __name__ == '__main__':
     app.run(debug=True)

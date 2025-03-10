@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import ReportEditor from './components/ReportEditor';
 import Navbar from './components/Navbar';
 import ReportTemplate from './components/ReportTemplate';
+import UploadReport from './components/UploadReport';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Routes>
           <Route path="/editor" element={<ReportEditor />} />
           <Route path="/template" element={<ReportTemplate />} />
+          <Route path="/upload-report" element={<UploadReport />} />
           <Route path="/settings" element={<h2>Settings Page</h2>} />
         </Routes>
       </main>
