@@ -39,15 +39,18 @@ const Loader = ({ isLoading }) => {
   const playerStyle = isMobile
     ? {
         width: '50%',
-        marginTop: '50px',
         height: '50%',
         background: 'none',
       }
     : {
-        width: '100%',
-        marginTop: '100px',
-        height: '100%',
+        width: '40%',
+        height: '40%',
         background: 'none',
+        position: 'absolute',
+        transform : 'translate(-50%, -50%)',
+        bottom: '0',
+        top: '550px',
+       
       };
 
   return (
