@@ -58,6 +58,38 @@
 .upload-btn input {
     display: none;
 }
+.select-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    margin-left: 15px; /* ✅ Ensures space between Clear & Translate */
+  }
+  
 
+  
+  .translate-btn:hover {
+    background: #e68900;
+  }
+  
+  .select {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 10px 15px;
+    color: black;
+    font-weight: 500;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .select:hover {
+    background: linear-gradient(145deg, #00B0F0, #00D4FF);
+    color: #fff;
+  }
+  
 
   

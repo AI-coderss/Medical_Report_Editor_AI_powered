@@ -1,34 +1,40 @@
 import React, { useState } from "react";
 import "draft-js/dist/Draft.css";
 import "../styles/UploadReport.css";
-import { FaUpload, FaTrash, FaDownload} from "react-icons/fa";
-import ReactMarkdown from "react-markdown"; // ✅ Import ReactMarkdown
+import { FaUpload, FaTrash, FaDownload, FaLanguage } from "react-icons/fa";
+import ReactMarkdown from "react-markdown";
 import PDFDownloader from "../components/PdfDownloader";
-import Loader from "../components/Loader"; // ✅ Import Loader component
+import Loader from "../components/Loader";
 
 const UploadReport = () => {
   const [structuredReport, setStructuredReport] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ Used for loading state
+  const [translatedReport, setTranslatedReport] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en"); // Default: English
 
   // Handle PDF Upload
   const handleUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setLoading(true); // ✅ Start loading indicator
+    setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const response = await fetch("https://medical-report-editor-ai-powered-backend.onrender.com/process-pdf", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/process-pdf",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
         setStructuredReport(data.structured_text);
+        setTranslatedReport("");
       } else {
         alert("Error processing file: " + data.error);
       }
@@ -36,12 +42,49 @@ const UploadReport = () => {
       alert("Failed to connect to the AI backend.");
     }
 
-    setLoading(false); // ✅ Stop loading indicator
+    setLoading(false);
+  };
+
+  // Handle Report Translation
+  const handleTranslate = async () => {
+    if (!structuredReport) {
+      alert("No report to translate.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/translate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: structuredReport,
+            target_language: selectedLanguage,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTranslatedReport(data.translated_text);
+      } else {
+        alert("Translation error: " + data.error);
+      }
+    } catch (error) {
+      alert("Failed to connect to the AI backend.");
+    }
+
+    setLoading(false);
   };
 
   // Handle Clear Report
   const handleClear = () => {
     setStructuredReport("");
+    setTranslatedReport("");
   };
 
   return (
@@ -62,22 +105,45 @@ const UploadReport = () => {
           <FaTrash /> Clear
         </button>
 
+        {/* ✅ Translate To Button & Language Selector */}
+        <div className="select-menu">
+          <button className="translate-btn" onClick={handleTranslate}>
+            <FaLanguage /> Translate To
+          </button>
+          <select
+            className="select"
+            value={selectedLanguage}
+            onChange={(e) => setSelectedLanguage(e.target.value)}
+          >
+            <option value="en">English</option>
+            <option value="ar">Arabic</option>
+            <option value="fr">French</option>
+          </select>
+        </div>
+
         {structuredReport && (
-          <PDFDownloader content={structuredReport} fileName="Structured_Report.pdf">
+          <PDFDownloader
+            content={translatedReport || structuredReport}
+            fileName="Structured_Report.pdf"
+          >
             <FaDownload /> Download
           </PDFDownloader>
         )}
       </div>
 
-         {/* ✅ Loader during processing */}
+      {/* ✅ Loader during processing */}
       {loading && <Loader isLoading={loading} />}
 
-      {/* Structured Report Preview using ReactMarkdown */}
+      {/* ✅ Structured Report Preview using ReactMarkdown */}
       <div className="word-like-editor">
-        {structuredReport ? (
+        {translatedReport ? (
+          <ReactMarkdown>{translatedReport}</ReactMarkdown>
+        ) : structuredReport ? (
           <ReactMarkdown>{structuredReport}</ReactMarkdown>
         ) : (
-          <p className="placeholder-text">Structured report will appear here...</p>
+          <p className="placeholder-text">
+            Structured report will appear here...
+          </p>
         )}
       </div>
     </div>
@@ -85,4 +151,3 @@ const UploadReport = () => {
 };
 
 export default UploadReport;
-

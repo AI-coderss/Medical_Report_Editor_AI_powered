@@ -201,6 +201,36 @@ def extract_text_from_pdf(file):
         return text
     except Exception as e:
         return f"Error extracting text: {str(e)}"
+# ✅ 4️⃣ Translate Medical Report
+@app.route('/translate', methods=['POST'])
+def translate_text():
+    try:
+        data = request.get_json()
+        text = data.get("text", "")
+        target_language = data.get("target_language", "en")  # Default to English
+
+        if not text.strip():
+            return jsonify({"error": "No text provided for translation"}), 400
+
+        if target_language not in ["en", "ar", "fr"]:
+            return jsonify({"error": "Invalid language selected"}), 400
+
+        translation_prompt = f"""
+        Translate the following medical report into {target_language.upper()}:
+        {text}
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": translation_prompt}]
+        )
+
+        translated_text = response.choices[0].message.content.strip()
+        return jsonify({"translated_text": translated_text})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == '__main__':
