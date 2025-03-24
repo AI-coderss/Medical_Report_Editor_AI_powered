@@ -1,0 +1,94 @@
+.eye-btn {
+  position: absolute;
+  top: 12px;
+  background: transparent;
+  color: black;
+  right: 0;
+}
+.sign-form {
+  transform: translateY(10%);
+  border-top: 5px solid #007bff;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+.sign-form input {
+  padding: 14px 12px;
+  font-size: 16px;
+}
+.submit-btn:hover {
+  background: #007bff;
+}
+.submit-btn {
+  padding: 14px;
+  background: #007bff;
+  font-size: 18px;
+  font-weight: 700;
+}
+.logo-img img {
+  width: 58%;
+  margin: 0 auto;
+  padding-bottom: 20px;
+}
+.eye-btn:hover {
+  box-shadow: none;
+  background: none !important;
+}
+.sign-form h2 {
+  color: #ae2323;
+}
+/* login form css start */
+.login-form h2 {
+  color: #ae2323;
+}
+.login-form {
+  transform: translateY(30%);
+  border-top: 5px solid #007bff;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+.login-form input {
+  padding: 14px 12px;
+  font-size: 16px;
+}
+.eye-btn1 {
+  position: absolute;
+  top: 12px;
+  background: transparent;
+  color: black;
+  right: 0;
+}
+.eye-btn1:hover {
+  box-shadow: none;
+  background: none;
+}
+/* signature css start */
+.signature-display {
+  text-align: right;
+  display: flex;
+  justify-content: right;
+}
+.signature-display img {
+  display: flex;
+  width: 30%;
+  margin: 0;
+  padding: 0;
+}
+.DraftEditor-root {
+  position: relative;
+}
+/* signature */
+.signature-section {
+  padding-block: 35px;
+}
+.signature-section h3 {
+  font-size: 22px;
+  font-weight: 500;
+  padding-bottom: 15px;
+}
+.signature-buttons {
+  display: flex;
+  gap: 20px;
+  padding-block: 20px;
+}
+.signature-buttons button {
+  padding: 8px 22px;
+  font-size: 18px;
+}

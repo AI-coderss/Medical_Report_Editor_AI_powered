@@ -1,7 +1,8 @@
-// src/components/ReportTemplate.js
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import SignatureCanvas from "react-signature-canvas";
 import "../styles/ReportTemplate.css";
 import PDFDownloader from "./PdfDownloader";
+
 function ReportTemplate() {
   const [formData, setFormData] = useState({
     patientName: "",
@@ -16,11 +17,28 @@ function ReportTemplate() {
     physicalExamination: "",
     investigations: "",
     assessmentPlan: "",
-    doctorSignature: "",
+    doctorSignature: "", // Will store Base64 signature
   });
 
+  const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
   const [loading, setLoading] = useState(false);
+  const signatureRef = useRef(null);
+
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (formData.age && isNaN(formData.age)) {
+      newErrors.age = "Age must be a valid number.";
+    }
+
+    if (signatureRef.current && signatureRef.current.isEmpty()) {
+      newErrors.doctorSignature = "Signature is required.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,36 +46,67 @@ function ReportTemplate() {
       ...prevData,
       [name]: value,
     }));
+
+    if (errors[name]) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [name]: undefined,
+      }));
+    }
+  };
+
+  const handleClearSignature = () => {
+    signatureRef.current.clear();
+    setFormData((prevData) => ({
+      ...prevData,
+      doctorSignature: "",
+    }));
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      doctorSignature: undefined,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate fields
-    if (Object.values(formData).some((value) => value.trim() === "")) {
-      alert("Please fill in all fields before generating the report.");
-      return;
+    if (!validateForm()) return;
+
+    const formDataToSend = new FormData();
+
+    Object.keys(formData).forEach((key) => {
+      if (key !== "doctorSignature") {
+        formDataToSend.append(key, formData[key]);
+      }
+    });
+
+    if (signatureRef.current) {
+      const signatureDataURL = signatureRef.current.toDataURL("image/png");
+      const blob = await (await fetch(signatureDataURL)).blob();
+      formDataToSend.append("doctorSignature", blob, "signature.png");
     }
 
     setLoading(true);
-
     try {
-      // Send data to the backend for structured report generation
-      const response = await fetch("https://medical-report-editor-ai-powered-backend.onrender.com/compile-report", {
+      const response = await fetch("http://127.0.0.1:5000/api/medical-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       });
 
       const data = await response.json();
-
       if (response.ok) {
         setCompiledReport(data.compiled_report);
       } else {
-        alert("Error: " + data.error);
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          general: "Error: " + data.error,
+        }));
       }
     } catch (error) {
-      alert("Failed to connect to the backend.");
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        general: "Failed to connect to the backend.",
+      }));
     }
 
     setLoading(false);
@@ -79,76 +128,159 @@ function ReportTemplate() {
       assessmentPlan: "",
       doctorSignature: "",
     });
-    setCompiledReport(""); // Clear the compiled report as well
+    setCompiledReport("");
+    setErrors({});
+    if (signatureRef.current) signatureRef.current.clear();
   };
 
   return (
     <div className="report-container">
-      {/* Toolbar */}
       <div className="toolbar">
         <h2>Medical Report Editor</h2>
-        <button className="generate-btn" onClick={handleSubmit} disabled={loading}>
+        <button
+          className="generate-btn"
+          onClick={handleSubmit}
+          disabled={loading}
+        >
           {loading ? "Generating..." : "Generate Report"}
         </button>
-        <button className="clear-btn" onClick={handleClear}>Clear</button>
+        <button className="clear-btn" onClick={handleClear}>
+          Clear
+        </button>
       </div>
 
-      {/* Page Layout: Left (Form) & Right (Generated Report) */}
       <div className="report-layout">
-        {/* Left: Input Fields */}
         <div className="report-form-container">
           <form className="report-form">
             <label>Patient Name:</label>
-            <input type="text" name="patientName" value={formData.patientName} onChange={handleChange} required />
+            <input
+              type="text"
+              name="patientName"
+              value={formData.patientName}
+              onChange={handleChange}
+            />
 
             <label>Age:</label>
-            <input type="number" name="age" value={formData.age} onChange={handleChange} required />
+            <input
+              type="text"
+              name="age"
+              value={formData.age}
+              onChange={handleChange}
+            />
+            {errors.age && (
+              <span className="text-red-500 error-message">{errors.age}</span>
+            )}
 
             <label>Chief Complaint:</label>
-            <textarea name="chiefComplaint" value={formData.chiefComplaint} onChange={handleChange} required />
+            <textarea
+              name="chiefComplaint"
+              value={formData.chiefComplaint}
+              onChange={handleChange}
+            />
 
             <label>History of Present Illness:</label>
-            <textarea name="historyOfPresentIllness" value={formData.historyOfPresentIllness} onChange={handleChange} required />
+            <textarea
+              name="historyOfPresentIllness"
+              value={formData.historyOfPresentIllness}
+              onChange={handleChange}
+            />
 
             <label>Past Medical History:</label>
-            <textarea name="pastMedicalHistory" value={formData.pastMedicalHistory} onChange={handleChange} required />
+            <textarea
+              name="pastMedicalHistory"
+              value={formData.pastMedicalHistory}
+              onChange={handleChange}
+            />
 
             <label>Family History:</label>
-            <textarea name="familyHistory" value={formData.familyHistory} onChange={handleChange} required />
+            <textarea
+              name="familyHistory"
+              value={formData.familyHistory}
+              onChange={handleChange}
+            />
 
             <label>Medications:</label>
-            <textarea name="medications" value={formData.medications} onChange={handleChange} required />
+            <textarea
+              name="medications"
+              value={formData.medications}
+              onChange={handleChange}
+            />
 
             <label>Allergies:</label>
-            <textarea name="allergies" value={formData.allergies} onChange={handleChange} required />
+            <textarea
+              name="allergies"
+              value={formData.allergies}
+              onChange={handleChange}
+            />
 
             <label>Review of Systems:</label>
-            <textarea name="reviewOfSystems" value={formData.reviewOfSystems} onChange={handleChange} required />
+            <textarea
+              name="reviewOfSystems"
+              value={formData.reviewOfSystems}
+              onChange={handleChange}
+            />
 
             <label>Physical Examination:</label>
-            <textarea name="physicalExamination" value={formData.physicalExamination} onChange={handleChange} required />
+            <textarea
+              name="physicalExamination"
+              value={formData.physicalExamination}
+              onChange={handleChange}
+            />
 
             <label>Investigations:</label>
-            <textarea name="investigations" value={formData.investigations} onChange={handleChange} required />
+            <textarea
+              name="investigations"
+              value={formData.investigations}
+              onChange={handleChange}
+            />
 
             <label>Assessment & Plan:</label>
-            <textarea name="assessmentPlan" value={formData.assessmentPlan} onChange={handleChange} required />
+            <textarea
+              name="assessmentPlan"
+              value={formData.assessmentPlan}
+              onChange={handleChange}
+            />
 
             <label>Doctor's Signature:</label>
-            <input type="text" name="doctorSignature" value={formData.doctorSignature} onChange={handleChange} required />
+            <div className="signature-container">
+              <SignatureCanvas
+                ref={signatureRef}
+                penColor="black"
+                canvasProps={{
+                  width: 300,
+                  height: 100,
+                  className: "signature-pad",
+                }}
+              />
+              <button type="button" onClick={handleClearSignature}>
+                Clear Signature
+              </button>
+            </div>
+            {errors.doctorSignature && (
+              <span className="text-red-500 error-message">
+                {errors.doctorSignature}
+              </span>
+            )}
           </form>
         </div>
 
-        {/* Right: Generated Report */}
         <div className="compiled-report-container">
           <h3>Compiled Medical Report</h3>
           {compiledReport ? (
             <>
               <pre className="compiled-report">{compiledReport}</pre>
-              <PDFDownloader content={compiledReport} fileName="Medical_Report.pdf" />
+              <PDFDownloader
+                content={compiledReport}
+                fileName="Medical_Report.pdf"
+              />
             </>
           ) : (
-            <p className="empty-report">The report will be displayed here after generation.</p>
+            <p className="empty-report">
+              The report will be displayed here after generation.
+            </p>
+          )}
+          {errors.general && (
+            <span className="error-message">{errors.general}</span>
           )}
         </div>
       </div>
@@ -157,11 +289,3 @@ function ReportTemplate() {
 }
 
 export default ReportTemplate;
-
-
-
-
-
-
-
-

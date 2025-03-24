@@ -1,27 +1,297 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from openai import OpenAI
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import fitz
+from mongoengine import connect, Document, StringField, FileField
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
+import re
+import bcrypt
+from pymongo import MongoClient
+from bson import ObjectId 
+import datetime
+from werkzeug.security import check_password_hash
+from werkzeug.utils import secure_filename
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 
+
+
 # Enable CORS for frontend communication (React running on localhost:3000)
-CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dsah.onrender.com"}})
+# CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dysah.onrender.com"}})
+# CORS(app)
+# CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dysah.onrender.com"]}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
+# MongoDB Connection (Using Connection String)
+MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+connect(db="medical_reports_db", host=MONGO_URI)
 
 # Get OpenAI API key from .env file
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# Ensure API key is loaded correctly
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = "abcd"
 if not OPENAI_API_KEY:
     raise ValueError("OpenAI API key not found. Please set it in the .env file.")
 
+
+app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1)  
+jwt = JWTManager(app)
+
+# Directory to store uploaded files (e.g., doctor's signature)
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'} 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+# User Model
+class User(Document):
+    firstName = StringField(required=True)
+    lastName = StringField(required=True)
+    email = StringField(required=True, unique=True)
+    password = StringField(required=True)
+    
+    
+
+# Ensure the upload folder exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Medical Report Model
+class MedicalReport(Document):
+    patient_name = StringField(required=True, max_length=100)
+    age = StringField(required=True, max_length=10)
+    chief_complaint = StringField(required=True)
+    history_of_present_illness = StringField(required=True)
+    past_medical_history = StringField(required=True)
+    family_history = StringField(required=True)
+    medications = StringField(required=True)
+    allergies = StringField(required=True)
+    review_of_systems = StringField(required=True)
+    physical_examination = StringField(required=True)
+    investigations = StringField(required=True)
+    assessment_plan = StringField(required=True)
+    doctor_signature = FileField()
+
+
+def validate_email(email):
+    regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(regex, email)
+
+def hash_password(password):
+    """Hash a password using bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def check_password(password, hashed):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+# Register Endpoint with Confirm Password
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    firstName = data.get('firstName')
+    lastName = data.get('lastName')
+    email = data.get('email')
+    password = data.get('password')
+    confirmPassword = data.get('confirmPassword')  # New field
+
+    # Check for missing fields
+    if not all([firstName, lastName, email, password, confirmPassword]):
+        return jsonify({'error': 'Missing fields'}), 400
+
+    # Validate email format
+    if not validate_email(email):
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    # Check if email already exists
+    if User.objects(email=email):
+        return jsonify({'error': 'Email already exists'}), 400
+
+    # Validate password confirmation
+    if password != confirmPassword:
+        return jsonify({'error': 'Passwords do not match'}), 400
+
+    # Hash the password before saving
+    hashed_password = hash_password(password)
+    user = User(firstName=firstName, lastName=lastName, email=email, password=hashed_password)
+    user.save()
+
+    # Return response (excluding password for security)
+    return jsonify({
+        'id': str(user.id),
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'email': user.email,
+        'message': 'User registered successfully'
+    }), 201
+
+# Login Endpoint with JWT
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    email = data.get('email')
+    password = data.get('password')
+
+    if not all([email, password]):
+        return jsonify({'error': 'Missing email or password'}), 400
+
+    user = User.objects(email=email).first()
+    if not user or not check_password(user.password, password):
+        return jsonify({'error': 'Invalid email or password'}), 401
+
+    # Create JWT tokens
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
+
+    # Create response
+    response = make_response(jsonify({
+        'message': 'Login successful',
+        'access_token': access_token,
+        'user': {
+            'id': str(user.id),
+            'first_name': user.firstName,
+            'last_name': user.lastName,
+            'email': user.email
+        }
+    }), 200)
+
+    # Set refresh token in HttpOnly cookie
+    response.set_cookie(
+        'token', refresh_token, httponly=True, secure=True, samesite='Strict'
+    )
+
+    return response
+
+# Get Specific User
+@app.route('/user/<id>', methods=['GET'])
+def get_user(id):
+    user = User.objects(id=id).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email
+    })
+
+# Get All Users
+@app.route('/users', methods=['GET'])
+def get_users():
+    users = User.objects()
+    return jsonify([{
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email
+    } for user in users])
+    
+# Helper function to check allowed file extensions
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/api/medical-report", methods=["POST"])
+def create_medical_report():
+    try:
+        # Extract form fields from request.form (not request.json)
+        patient_name = request.form.get("patientName")
+        age = request.form.get("age")
+        chief_complaint = request.form.get("chiefComplaint")
+        history_of_present_illness = request.form.get("historyOfPresentIllness")
+        past_medical_history = request.form.get("pastMedicalHistory")
+        family_history = request.form.get("familyHistory")
+        medications = request.form.get("medications")
+        allergies = request.form.get("allergies")
+        review_of_systems = request.form.get("reviewOfSystems")
+        physical_examination = request.form.get("physicalExamination")
+        investigations = request.form.get("investigations")
+        assessment_plan = request.form.get("assessmentPlan")
+
+        # Validate required fields
+        required_fields = {
+            "patient_name": patient_name,
+            "age": age,
+            "chief_complaint": chief_complaint,
+            "history_of_present_illness": history_of_present_illness,
+            "past_medical_history": past_medical_history,
+            "family_history": family_history,
+            "medications": medications,
+            "allergies": allergies,
+            "review_of_systems": review_of_systems,
+            "physical_examination": physical_examination,
+            "investigations": investigations,
+            "assessment_plan": assessment_plan,
+        }
+
+        missing_fields = [field for field, value in required_fields.items() if not value]
+        if missing_fields:
+            return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
+
+        # Handle signature file upload
+        if "doctorSignature" not in request.files:
+            return jsonify({"error": "No doctor signature file provided"}), 400
+
+        file = request.files["doctorSignature"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        if not allowed_file(file.filename):
+            return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+
+        # Secure the filename and save it
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(file_path)
+
+        # Save report in MongoDB
+        report = MedicalReport(
+            patient_name=patient_name,
+            age=age,
+            chief_complaint=chief_complaint,
+            history_of_present_illness=history_of_present_illness,
+            past_medical_history=past_medical_history,
+            family_history=family_history,
+            medications=medications,
+            allergies=allergies,
+            review_of_systems=review_of_systems,
+            physical_examination=physical_examination,
+            investigations=investigations,
+            assessment_plan=assessment_plan,
+        )
+
+        # Store signature file in MongoDB GridFS
+        with open(file_path, "rb") as f:
+            report.doctor_signature.put(f, content_type=file.content_type)
+
+        report.save()
+
+        # Optionally, remove the file from the local server
+        os.remove(file_path)
+
+        return jsonify(
+            {
+                "message": "Medical report created successfully",
+                "id": str(report.id),
+                "patient_name": report.patient_name,
+                "age": report.age,
+                "chief_complaint": report.chief_complaint,
+            }
+        ), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ✅ 1️⃣ Corrects and improves the report (Original functionality)
 @app.route('/correct-text', methods=['POST'])
@@ -147,7 +417,8 @@ def compile_report():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    # ✅ 4️⃣ Process PDF Report and Convert to Structured Format
+
+# ✅ 4️⃣ Process PDF Report and Convert to Structured Format
 @app.route('/process-pdf', methods=['POST'])
 def process_pdf():
     try:
@@ -190,7 +461,6 @@ def process_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # ✅ Helper Function: Extract Text from PDF
 def extract_text_from_pdf(file):
     try:
@@ -201,6 +471,7 @@ def extract_text_from_pdf(file):
         return text
     except Exception as e:
         return f"Error extracting text: {str(e)}"
+
 # ✅ 4️⃣ Translate Medical Report
 @app.route('/translate', methods=['POST'])
 def translate_text():
@@ -231,10 +502,5 @@ def translate_text():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-

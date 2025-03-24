@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Editor,
   EditorState,
@@ -27,11 +27,13 @@ import { MenuItem, Select } from "@mui/material";
 import { FaDownload } from "react-icons/fa";
 import MistakeSidebar from "./MistakeSidebar";
 import PDFDownloader from "./PdfDownloader";
+import SignatureCanvas from "react-signature-canvas";
 
 // ✅ Local Storage Keys
 const REPORT_STORAGE_KEY = "savedReportContent";
 const FORMATTED_STORAGE_KEY = "savedFormattedMarkdown";
 const MISTAKES_STORAGE_KEY = "savedMistakes";
+const SIGNATURE_STORAGE_KEY = "savedSignature";
 
 // ✅ Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
@@ -69,12 +71,15 @@ function ReportEditor() {
   const [mistakes, setMistakes] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [formattedMarkdown, setFormattedMarkdown] = useState("");
+  const [signature, setSignature] = useState(null);
+  const sigCanvas = useRef(null);
 
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
     const savedContent = localStorage.getItem(REPORT_STORAGE_KEY);
     const savedFormatted = localStorage.getItem(FORMATTED_STORAGE_KEY);
     const savedMistakes = localStorage.getItem(MISTAKES_STORAGE_KEY);
+    const savedSignature = localStorage.getItem(SIGNATURE_STORAGE_KEY);
 
     if (savedContent) {
       const restoredContent = convertFromRaw(JSON.parse(savedContent));
@@ -83,6 +88,7 @@ function ReportEditor() {
 
     if (savedFormatted) setFormattedMarkdown(savedFormatted);
     if (savedMistakes) setMistakes(JSON.parse(savedMistakes));
+    if (savedSignature) setSignature(savedSignature);
   }, [decorator]);
 
   // ✅ Save report content in LocalStorage on changes
@@ -93,6 +99,21 @@ function ReportEditor() {
     localStorage.setItem(FORMATTED_STORAGE_KEY, formattedMarkdown);
     localStorage.setItem(MISTAKES_STORAGE_KEY, JSON.stringify(mistakes));
   }, [editorState, formattedMarkdown, mistakes]);
+  // ✅ Save signature
+  const saveSignature = () => {
+    if (sigCanvas.current) {
+      const dataUrl = sigCanvas.current.toDataURL();
+      setSignature(dataUrl);
+      localStorage.setItem(SIGNATURE_STORAGE_KEY, dataUrl);
+    }
+  };
+
+  // ✅ Clear signature
+  const clearSignature = () => {
+    sigCanvas.current.clear();
+    setSignature(null);
+    localStorage.removeItem(SIGNATURE_STORAGE_KEY);
+  };
 
   // ✅ Handle Editor Change
   const handleEditorChange = (state) => {
@@ -109,16 +130,19 @@ function ReportEditor() {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
   };
   const handleClearReport = () => {
-    setEditorState(EditorState.createEmpty(new CompositeDecorator([
-      { strategy: errorStrategy, component: ErrorSpan }
-    ]))); // Reset with a new decorator instance
+    setEditorState(
+      EditorState.createEmpty(
+        new CompositeDecorator([
+          { strategy: errorStrategy, component: ErrorSpan },
+        ])
+      )
+    ); // Reset with a new decorator instance
     setFormattedMarkdown(""); // Clear formatted Markdown preview
     setMistakes(null); // Clear mistakes
     localStorage.removeItem(REPORT_STORAGE_KEY);
     localStorage.removeItem(FORMATTED_STORAGE_KEY);
     localStorage.removeItem(MISTAKES_STORAGE_KEY);
   };
-  
 
   // ✅ Delete/Backspace Works
   const deleteSelection = () => {
@@ -273,8 +297,8 @@ function ReportEditor() {
           <button className="toolbar-btn" onClick={deleteSelection}>
             🗑️
           </button>
-            {/* ✅ Download Button */}
-            <PDFDownloader
+          {/* ✅ Download Button */}
+          <PDFDownloader
             content={formattedMarkdown}
             fileName="Medical_Report.pdf"
           >
@@ -315,8 +339,34 @@ function ReportEditor() {
             placeholder="Write your medical report here..."
           />
         )}
+        {signature && (
+          <div className="signature-display">
+            <img
+              src={signature}
+              alt="Saved Signature"
+              className="saved-signature"
+            />
+          </div>
+        )}
       </div>
 
+      {/* Signature Section */}
+      <div className="signature-section">
+        <h3>Add your Signature</h3>
+        <SignatureCanvas
+          ref={sigCanvas}
+          penColor="black"
+          canvasProps={{
+            className: "signature-pad",
+            width: 400,
+            height: 150,
+          }}
+        />
+        <div className="signature-buttons">
+          <button onClick={saveSignature}>Save Signature</button>
+          <button onClick={clearSignature}>Clear</button>
+        </div>
+      </div>
       {/* Sidebar */}
       <MistakeSidebar
         mistakes={mistakes}

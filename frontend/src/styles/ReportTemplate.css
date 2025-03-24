@@ -67,17 +67,17 @@ button .shine-content {
 }
 
 button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
   background: linear-gradient(
-      45deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
   );
   transform: rotate(45deg) translateY(-100%);
   transition: transform 0.5s ease;
@@ -90,7 +90,7 @@ button:hover::before {
 
 button:hover {
   background: #007bff; /* Darker shade of blue */
-  box-shadow: 0 3px 10px  #007bff;;
+  box-shadow: 0 3px 10px #007bff;
 }
 
 /* Loading State */
@@ -178,8 +178,27 @@ textarea[name="doctorSignature"] {
   font-family: "Courier New", monospace;
   border-left: 5px solid #007bff;
 }
+.signature-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
 
+.signature-pad {
+  border: 2px solid #ccc;
+  border-radius: 5px;
+}
 
+button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  background: red;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
 
-
-
+button:hover {
+  background: darkred;
+}
