@@ -290,6 +290,7 @@ def create_medical_report():
         ), 201
 
 
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
