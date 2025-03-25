@@ -24,6 +24,7 @@ function ReportTemplate() {
   const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signatureBase64, setSignatureBase64] = useState("");
   const signatureRef = useRef(null);
 
   const validateForm = () => {
@@ -89,6 +90,11 @@ function ReportTemplate() {
       formDataToSend.append("doctorSignature", blob, "signature.png");
     }
 
+    if (signatureRef.current && !signatureRef.current.isEmpty()) {
+      const signatureDataURL = signatureRef.current.toDataURL("image/png");
+      setSignatureBase64(signatureDataURL); // Update state
+    }
+
     setLoading(true);
 
     try {
@@ -126,14 +132,19 @@ function ReportTemplate() {
           general: "Error: " + apiOneData.error,
         }));
       }
-
-      // Handle second API response
+      const signatureDataURL =
+        signatureRef.current && !signatureRef.current.isEmpty()
+          ? signatureRef.current.toDataURL("image/png")
+          : null;
+      const signatureImageTag = signatureDataURL
+        ? `<img src="${signatureDataURL}" alt="Doctor's Signature" style="height:50px; width:auto; display:block; margin-top:10px;" />`
+        : "";
       const apiTwoData = await apiTwoResponse.json();
       if (apiTwoResponse.ok) {
-        setCompiledReport((prevCompiledReport) => ({
-          ...prevCompiledReport,
-          aiCompiledReport: apiTwoData.compiled_report,
-        }));
+        setCompiledReport(
+          (prevCompiledReport) =>
+            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n\nDoctor Signature:\n${signatureImageTag}`
+        );
       } else {
         alert("Error: " + apiTwoData.error);
       }
@@ -303,7 +314,10 @@ function ReportTemplate() {
           <h3>Compiled Medical Report</h3>
           {compiledReport ? (
             <>
-              <pre className="compiled-report">{compiledReport}</pre>
+              <div
+                className="compiled-report"
+                dangerouslySetInnerHTML={{ __html: compiledReport }}
+              />
               <PDFDownloader
                 content={compiledReport}
                 fileName="Medical_Report.pdf"
@@ -313,9 +327,6 @@ function ReportTemplate() {
             <p className="empty-report">
               The report will be displayed here after generation.
             </p>
-          )}
-          {errors.general && (
-            <span className="error-message">{errors.general}</span>
           )}
         </div>
       </div>

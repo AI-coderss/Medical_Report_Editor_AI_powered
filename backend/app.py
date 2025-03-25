@@ -67,21 +67,20 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 # Medical Report Model
 class MedicalReport(Document):
-    patient_name = StringField(required=True, max_length=100)
-    age = StringField(required=True, max_length=10)
-    chief_complaint = StringField(required=True)
-    history_of_present_illness = StringField(required=True)
-    past_medical_history = StringField(required=True)
-    family_history = StringField(required=True)
-    medications = StringField(required=True)
-    allergies = StringField(required=True)
-    review_of_systems = StringField(required=True)
-    physical_examination = StringField(required=True)
-    investigations = StringField(required=True)
-    assessment_plan = StringField(required=True)
+    patient_name = StringField( max_length=100)
+    age = StringField(max_length=10)
+    chief_complaint = StringField()
+    history_of_present_illness = StringField()
+    past_medical_history = StringField()
+    family_history = StringField()
+    medications = StringField()
+    allergies = StringField()
+    review_of_systems = StringField()
+    physical_examination = StringField()
+    investigations = StringField()
+    assessment_plan = StringField()
     doctor_signature = FileField()
     result = StringField()
-
 class Editor(Document):
     text = StringField(required=True)
     result = StringField(required=True)
@@ -305,27 +304,6 @@ def create_medical_report():
         physical_examination = request.form.get("physicalExamination")
         investigations = request.form.get("investigations")
         assessment_plan = request.form.get("assessmentPlan")
-        
-
-        # Validate required fields
-        required_fields = {
-            "patient_name": patient_name,
-            "age": age,
-            "chief_complaint": chief_complaint,
-            "history_of_present_illness": history_of_present_illness,
-            "past_medical_history": past_medical_history,
-            "family_history": family_history,
-            "medications": medications,
-            "allergies": allergies,
-            "review_of_systems": review_of_systems,
-            "physical_examination": physical_examination,
-            "investigations": investigations,
-            "assessment_plan": assessment_plan,
-        }
-
-        missing_fields = [field for field, value in required_fields.items() if not value]
-        if missing_fields:
-            return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
 
         # Handle signature file upload
         if "doctorSignature" not in request.files:
@@ -579,45 +557,43 @@ def compile_report():
     try:
         data = request.get_json()
 
+        # Generate AI medical report
         structured_prompt = f"""
-        You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
+            You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
 
-        **Patient Information:**
-        - Name: {data.get("patientName", "N/A")}
-        - Age: {data.get("age", "N/A")}
+            **Patient Information:**
+            - Name: {data.get("patientName", "N/A")}
+            - Age: {data.get("age", "N/A")}
 
-        **Chief Complaint:**
-        {data.get("chiefComplaint", "N/A")}
+            **Chief Complaint:**
+            {data.get("chiefComplaint", "N/A")}
 
-        **History of Present Illness:**
-        {data.get("historyOfPresentIllness", "N/A")}
+            **History of Present Illness:**
+            {data.get("historyOfPresentIllness", "N/A")}
 
-        **Past Medical History:**
-        {data.get("pastMedicalHistory", "N/A")}
+            **Past Medical History:**
+            {data.get("pastMedicalHistory", "N/A")}
 
-        **Family History:**
-        {data.get("familyHistory", "N/A")}
+            **Family History:**
+            {data.get("familyHistory", "N/A")}
 
-        **Medications:**
-        {data.get("medications", "N/A")}
+            **Medications:**
+            {data.get("medications", "N/A")}
 
-        **Allergies:**
-        {data.get("allergies", "N/A")}
+            **Allergies:**
+            {data.get("allergies", "N/A")}
 
-        **Review of Systems:**
-        {data.get("reviewOfSystems", "N/A")}
+            **Review of Systems:**
+            {data.get("reviewOfSystems", "N/A")}
 
-        **Physical Examination:**
-        {data.get("physicalExamination", "N/A")}
+            **Physical Examination:**
+            {data.get("physicalExamination", "N/A")}
 
-        **Investigations:**
-        {data.get("investigations", "N/A")}
+            **Investigations:**
+            {data.get("investigations", "N/A")}
 
-        **Assessment & Plan:**
-        {data.get("assessmentPlan", "N/A")}
-
-        **Doctor's Signature:**
-        {data.get("doctorSignature", "N/A")}
+            **Assessment & Plan:**
+            {data.get("assessmentPlan", "N/A")}
         """
 
         response = client.chat.completions.create(

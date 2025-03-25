@@ -1,6 +1,13 @@
-import React from 'react';
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { FaDownload } from 'react-icons/fa'; // Import Font Awesome download icon
+import React from "react";
+import {
+  PDFDownloadLink,
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+} from "@react-pdf/renderer";
+import { FaDownload } from "react-icons/fa"; // Import Font Awesome download icon
 
 // Define styles for the PDF document
 const styles = StyleSheet.create({
@@ -12,11 +19,11 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 14,
     marginBottom: 7,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
   },
   bold: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   section: {
     marginBottom: 8,
@@ -27,9 +34,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 20,
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 10,
-    color: '#666',
+    color: "#666",
   },
 });
 
@@ -39,7 +46,7 @@ const renderMarkdown = (line) => {
   const parts = line.match(regex) || []; // Ensure parts is an array
 
   return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
+    if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <Text key={index} style={styles.bold}>
           {part.slice(2, -2)} {/* Remove the ** markers */}
@@ -52,9 +59,9 @@ const renderMarkdown = (line) => {
 
 // Helper function to parse and render lines
 const renderContent = (text) => {
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   return lines.map((line, index) => {
-    if (line.startsWith('- ')) {
+    if (line.startsWith("- ")) {
       // Handle list items
       return (
         <Text key={index} style={styles.listItem}>
@@ -76,7 +83,7 @@ const PDFDownloader = ({ content, fileName }) => (
     document={
       <Document>
         <Page style={styles.page}>
-          <Text className='header' style={styles.header}></Text>
+          <Text className="header" style={styles.header}></Text>
           <View>{renderContent(content)}</View>
           <Text style={styles.footer}>
             Generated on {new Date().toLocaleDateString()}.
@@ -86,12 +93,12 @@ const PDFDownloader = ({ content, fileName }) => (
     }
     fileName={fileName}
     style={{
-      textDecoration: 'none',
-      color: '#007bff',
-      fontSize: '0.9rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem'  // Adding spacing between icon and text
+      textDecoration: "none",
+      color: "#007bff",
+      fontSize: "0.9rem",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem", // Adding spacing between icon and text
     }}
   >
     <FaDownload /> Download PDF
