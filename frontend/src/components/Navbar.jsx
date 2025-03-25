@@ -1,13 +1,15 @@
 // src/components/Navbar.js
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Howl } from "howler"; // Import Howler.js
+import Cookies from "js-cookie"; // Import js-cookie
 import "../styles/Navbar.css";
 
 const Navbar = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate(); // For redirection
 
   // Navigation sound effect
   const navSound = new Howl({
@@ -36,6 +38,10 @@ const Navbar = () => {
 
   const toggleMenu = () => {
     setMenuOpen((prev) => !prev);
+  };
+  const handleLogout = () => {
+    Cookies.remove("token"); // Remove the authentication token from cookies
+    navigate("/login"); // Redirect to the login page
   };
 
   return (
@@ -82,6 +88,9 @@ const Navbar = () => {
                   {label}
                 </Link>
               ))}
+              <button className="logout-btn mobile" onClick={handleLogout}>
+                Logout 🚪
+              </button>
             </div>
           )}
         </div>
@@ -122,6 +131,13 @@ const Navbar = () => {
               <div className="navItemActiveCopyRight"></div>
             </div>
           </div>
+        </div>
+      )}
+      {!isMobile && (
+        <div>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout 🚪
+          </button>
         </div>
       )}
     </div>

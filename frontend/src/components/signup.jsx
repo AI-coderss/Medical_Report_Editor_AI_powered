@@ -69,104 +69,110 @@ const Signup = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg sign-form ">
-      <div className="logo-img">
-        <img src="logo.png" alt="" />
-      </div>
-      <h2 className="text-2xl font-bold mb-4 text-center">Register Here</h2>
-      {message && <p className="mb-4 text-red-500">{message}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="firstName"
-          placeholder="First Name"
-          value={formData.firstName}
-          onChange={handleChange}
-          className="w-full p-2 border rounded mb-2"
-        />
-        {errors.firstName && (
-          <p className="text-red-500 text-sm">{errors.firstName}</p>
-        )}
-
-        <input
-          type="text"
-          name="lastName"
-          placeholder="Last Name"
-          value={formData.lastName}
-          onChange={handleChange}
-          className="w-full p-2 border rounded mb-2"
-        />
-        {errors.lastName && (
-          <p className="text-red-500 text-sm">{errors.lastName}</p>
-        )}
-
-        <input
-          type="text"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full p-2 border rounded mb-2"
-        />
-        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-
-        <div className="relative">
+    <div>
+      <h2 className="text-4xl text-center font-bold text-red-600 mb-4 mt-5">
+        Add Users
+      </h2>
+      <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg sign-form ">
+        <div className="logo-img">
+          <img src="logo.png" alt="" />
+        </div>
+        {message && <p className="mb-4 text-red-500">{message}</p>}
+        <form onSubmit={handleSubmit}>
           <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={formData.password}
+            type="text"
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
             onChange={handleChange}
             className="w-full p-2 border rounded mb-2"
           />
-          <button
-            type="button"
-            className="absolute right-3 top-3 eye-btn"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? (
-              <EyeSlashIcon className="h-5 w-5" />
-            ) : (
-              <EyeIcon className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-        {errors.password && (
-          <p className="text-red-500 text-sm">{errors.password}</p>
-        )}
+          {errors.firstName && (
+            <p className="text-red-500 text-sm">{errors.firstName}</p>
+          )}
 
-        <div className="relative">
           <input
-            type={showConfirmPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
+            type="text"
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-4"
+            className="w-full p-2 border rounded mb-2"
           />
-          <button
-            type="button"
-            className="absolute right-3 top-3 eye-btn"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-          >
-            {showConfirmPassword ? (
-              <EyeSlashIcon className="h-5 w-5" />
-            ) : (
-              <EyeIcon className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-        {errors.confirmPassword && (
-          <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
-        )}
+          {errors.lastName && (
+            <p className="text-red-500 text-sm">{errors.lastName}</p>
+          )}
 
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded submit-btn"
-        >
-          Sign Up
-        </button>
-      </form>
+          <input
+            type="text"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full p-2 border rounded mb-2"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm">{errors.email}</p>
+          )}
+
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full p-2 border rounded mb-2"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-3 eye-btn"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-red-500 text-sm">{errors.password}</p>
+          )}
+
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full p-2 border rounded mb-4"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-3 eye-btn"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white p-2 rounded submit-btn"
+          >
+            Submit
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

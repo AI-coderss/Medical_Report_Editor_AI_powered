@@ -28,6 +28,7 @@
     "react-router-dom": "^7.2.0",
     "react-scripts": "5.0.1",
     "react-signature-canvas": "^1.1.0-alpha.1",
+    "sweetalert2": "^11.17.2",
     "tailwindcss": "^4.0.15",
     "web-vitals": "^2.1.4"
   },

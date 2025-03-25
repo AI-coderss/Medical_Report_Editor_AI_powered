@@ -4,7 +4,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import fitz
-from mongoengine import connect, Document, StringField, FileField
+from mongoengine import connect, Document, StringField, FileField, ValidationError
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
 import re
 import bcrypt
@@ -13,6 +13,7 @@ from bson import ObjectId
 import datetime
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
+import base64
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,19 +28,20 @@ app = Flask(__name__)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dysah.onrender.com"]}})
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+
+
 # MongoDB Connection (Using Connection String)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 connect(db="medical_reports_db", host=MONGO_URI)
 
 # Get OpenAI API key from .env file
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_API_KEY = "abcd"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("OpenAI API key not found. Please set it in the .env file.")
 
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1)  
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=24)  
 jwt = JWTManager(app)
 
 # Directory to store uploaded files (e.g., doctor's signature)
@@ -78,7 +80,11 @@ class MedicalReport(Document):
     investigations = StringField(required=True)
     assessment_plan = StringField(required=True)
     doctor_signature = FileField()
+    result = StringField()
 
+class Editor(Document):
+    text = StringField(required=True)
+    result = StringField(required=True)
 
 def validate_email(email):
     regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -102,7 +108,7 @@ def register():
     lastName = data.get('lastName')
     email = data.get('email')
     password = data.get('password')
-    confirmPassword = data.get('confirmPassword')  # New field
+    confirmPassword = data.get('confirmPassword')  
 
     # Check for missing fields
     if not all([firstName, lastName, email, password, confirmPassword]):
@@ -175,25 +181,29 @@ def login():
     return response
 
 # Get Specific User
+
 @app.route('/user/<id>', methods=['GET'])
+@jwt_required()
 def get_user(id):
     user = User.objects(id=id).first()
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
     return jsonify({
-        'first_name': user.first_name,
-        'last_name': user.last_name,
+        'first_name': user.firstName,
+        'last_name': user.lastName,
         'email': user.email
     })
 
 # Get All Users
 @app.route('/users', methods=['GET'])
+@jwt_required()
 def get_users():
     users = User.objects()
     return jsonify([{
-        'first_name': user.first_name,
-        'last_name': user.last_name,
+        'id': str(user.id),
+        'first_name': user.firstName,
+        'last_name': user.lastName,
         'email': user.email
     } for user in users])
     
@@ -201,7 +211,85 @@ def get_users():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/user/<user_id>', methods=['PUT'])
+@jwt_required()
+def update_user(user_id):
+    try:
+        # Get the current user's ID from JWT
+        current_user_id = get_jwt_identity()
+
+        # Check if the user is authorized to update this profile
+        if current_user_id != user_id:
+            return jsonify({'error': 'Unauthorized to update this user'}), 403
+
+        # Find the user
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Get data from request (supporting both JSON and form data)
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+
+        # Get fields to update (all optional)
+        first_name = data.get('firstName')
+        last_name = data.get('lastName')
+        
+        # Prepare update fields
+        update_fields = {}
+        if first_name:
+            update_fields['set__firstName'] = first_name
+        if last_name:
+            update_fields['set__lastName'] = last_name
+
+        # If no fields to update, return error
+        if not update_fields:
+            return jsonify({'error': 'No valid fields provided for update'}), 400
+
+        # Update the user
+        user.update(**update_fields)
+        user.reload()
+
+        # Return updated user data (excluding password)
+        return jsonify({
+            'message': 'User updated successfully',
+            'id': str(user.id),
+            'firstName': user.firstName,
+            'lastName': user.lastName,
+        }), 200
+
+    except ValidationError as e:
+        return jsonify({'error': 'Validation error: ' + str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete User Endpoint
+@app.route('/delete/<user_id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(user_id):
+    try:
+        # Find the user
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Delete the user
+        user.delete()
+
+        # Return success response
+        return jsonify({
+            'message': 'User deleted successfully',
+            'id': user_id
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route("/api/medical-report", methods=["POST"])
+@jwt_required()
 def create_medical_report():
     try:
         # Extract form fields from request.form (not request.json)
@@ -217,6 +305,7 @@ def create_medical_report():
         physical_examination = request.form.get("physicalExamination")
         investigations = request.form.get("investigations")
         assessment_plan = request.form.get("assessmentPlan")
+        
 
         # Validate required fields
         required_fields = {
@@ -282,10 +371,10 @@ def create_medical_report():
         return jsonify(
             {
                 "message": "Medical report created successfully",
-                "id": str(report.id),
                 "patient_name": report.patient_name,
                 "age": report.age,
                 "chief_complaint": report.chief_complaint,
+                "id": str(report.id),
             }
         ), 201
 
@@ -293,6 +382,128 @@ def create_medical_report():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+#Update API
+@app.route('/medical-report/<report_id>', methods=['PUT'])
+@jwt_required()
+def update_medical_report(report_id):
+    try:
+        # Check if the report exists
+        report = MedicalReport.objects(id=report_id).first()
+        if not report:
+            return jsonify({'error': 'Medical report not found'}), 404
+
+        # Check if the request contains form data or JSON
+        if request.is_json:
+            data = request.get_json()
+            result = data.get('result')
+        else:
+            result = request.form.get('result')
+
+        # Validate the result field
+        if not result:
+            return jsonify({'error': 'Result field is required'}), 400
+
+        # Update the result field
+        report.update(set__result=result)
+
+        # Reload the updated report to confirm changes
+        report.reload()
+
+        # Return success response
+        return jsonify({
+            'message': 'Medical report updated successfully',
+            'id': str(report.id),
+            'patient_name': report.patient_name,
+            'result': report.result
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Get All Medical Reports (Patients)
+@app.route('/reports', methods=['GET'])
+# @jwt_required()
+def get_reports():
+    try:
+        reports = MedicalReport.objects()
+        report_list = []
+        for report in reports:
+            # Get base64-encoded image data if signature exists
+            signature_data = None
+            if report.doctor_signature:
+                signature_data = base64.b64encode(report.doctor_signature.read()).decode('utf-8')
+            report_dict = {
+                "id": str(report.id),
+                "patient_name": report.patient_name,
+                "age": report.age,
+                "chief_complaint": report.chief_complaint,
+                "history_of_present_illness": report.history_of_present_illness,
+                "past_medical_history": report.past_medical_history,
+                "family_history": report.family_history,
+                "medications": report.medications,
+                "allergies": report.allergies,
+                "review_of_systems": report.review_of_systems,
+                "physical_examination": report.physical_examination,
+                "investigations": report.investigations,
+                "assessment_plan": report.assessment_plan,
+                "doctor_signature": signature_data  
+            }
+            report_list.append(report_dict)
+        return jsonify(report_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    #Get specific Medical Report
+@app.route('/report/<id>', methods=['GET'])
+@jwt_required()
+def get_report(id):
+    report = MedicalReport.objects(id=id).first()
+    if not report:
+        return jsonify({'error': 'report not found'}), 404
+    
+    return jsonify({
+            "id": str(report.id),
+            "patient_name": report.patient_name,
+            "age": report.age,
+            "chief_complaint": report.chief_complaint,
+            "history_of_present_illness": report.history_of_present_illness,
+            "past_medical_history": report.past_medical_history,
+            "family_history": report.family_history,
+            "medications" : report.medications,
+            "allergies": report.allergies,
+            "review_of_systems": report.review_of_systems,
+            "physical_examination": report.physical_examination,
+            "investigations": report.investigations,
+            "assessment_plan": report.assessment_plan,
+            "doctor_signature" : report.doctor_signature,
+    })
+
+# Delete Medical Report Endpoint
+@app.route('/report-delete/<report_id>', methods=['DELETE'])
+@jwt_required()
+def delete_medical_report(report_id):
+    try:
+        # Find the medical report
+        report = MedicalReport.objects(id=report_id).first()
+        if not report:
+            return jsonify({'error': 'Medical report not found'}), 404
+
+          
+        if report.doctor_signature:
+            report.doctor_signature.delete()
+
+        # Delete the report
+        report.delete()
+
+        # Return success response
+        return jsonify({
+            'message': 'Medical report deleted successfully',
+            'id': report_id
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 
 # ✅ 1️⃣ Corrects and improves the report (Original functionality)

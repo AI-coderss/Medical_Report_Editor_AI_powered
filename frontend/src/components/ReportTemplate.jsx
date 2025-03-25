@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import SignatureCanvas from "react-signature-canvas";
 import "../styles/ReportTemplate.css";
 import PDFDownloader from "./PdfDownloader";
+import Cookies from "js-cookie";
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
@@ -74,12 +75,14 @@ function ReportTemplate() {
 
     const formDataToSend = new FormData();
 
+    // Append form data except the doctorSignature
     Object.keys(formData).forEach((key) => {
       if (key !== "doctorSignature") {
         formDataToSend.append(key, formData[key]);
       }
     });
 
+    // Handle the signature image
     if (signatureRef.current) {
       const signatureDataURL = signatureRef.current.toDataURL("image/png");
       const blob = await (await fetch(signatureDataURL)).blob();
@@ -87,20 +90,52 @@ function ReportTemplate() {
     }
 
     setLoading(true);
+
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/medical-report", {
+      const token = Cookies.get("token");
+
+      // Request to the first API
+      const apiOneRequest = fetch("http://127.0.0.1:5000/api/medical-report", {
         method: "POST",
         body: formDataToSend,
+        headers: {
+          Authorization: `Bearer ${token}`, // Add JWT token in headers
+        },
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        setCompiledReport(data.compiled_report);
+      // Request to the second API
+      const apiTwoRequest = fetch("http://127.0.0.1:5000/compile-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      // Wait for both API requests to finish
+      const [apiOneResponse, apiTwoResponse] = await Promise.all([
+        apiOneRequest,
+        apiTwoRequest,
+      ]);
+
+      // Handle first API response
+      const apiOneData = await apiOneResponse.json();
+      if (apiOneResponse.ok) {
+        setCompiledReport(apiOneData.compiled_report);
       } else {
         setErrors((prevErrors) => ({
           ...prevErrors,
-          general: "Error: " + data.error,
+          general: "Error: " + apiOneData.error,
         }));
+      }
+
+      // Handle second API response
+      const apiTwoData = await apiTwoResponse.json();
+      if (apiTwoResponse.ok) {
+        setCompiledReport((prevCompiledReport) => ({
+          ...prevCompiledReport,
+          aiCompiledReport: apiTwoData.compiled_report,
+        }));
+      } else {
+        alert("Error: " + apiTwoData.error);
       }
     } catch (error) {
       setErrors((prevErrors) => ({
