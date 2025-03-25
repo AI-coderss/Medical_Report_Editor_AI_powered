@@ -41,7 +41,12 @@ const Login = () => {
       );
       setMessage(response.data.message || "Login successful!");
       Cookies.set("token", response.data.access_token, { expires: 7 });
-      navigate("/editor");
+      // Check if the email is the admin email
+      if (formData.email === "admin.samirabbashospital@gmail.com") {
+        navigate("/dashboard/users"); // Navigate to the dashboard if the email is admin
+      } else {
+        navigate("/editor"); // Otherwise, navigate to the editor
+      }
     } catch (error) {
       setMessage(error.response?.data?.message || "Login failed. Try again.");
     }
