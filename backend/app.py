@@ -81,9 +81,13 @@ class MedicalReport(Document):
     assessment_plan = StringField()
     doctor_signature = FileField()
     result = StringField()
+    compiled_report=StringField()
+# class Editor(Document):
+#     text = StringField(required=True)
+#     result = StringField(required=True)
 class Editor(Document):
-    text = StringField(required=True)
     result = StringField(required=True)
+    meta = {'collection': 'corrected_reports'}
 
 def validate_email(email):
     regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -287,79 +291,79 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 
-@app.route("/api/medical-report", methods=["POST"])
-@jwt_required()
-def create_medical_report():
-    try:
-        # Extract form fields from request.form (not request.json)
-        patient_name = request.form.get("patientName")
-        age = request.form.get("age")
-        chief_complaint = request.form.get("chiefComplaint")
-        history_of_present_illness = request.form.get("historyOfPresentIllness")
-        past_medical_history = request.form.get("pastMedicalHistory")
-        family_history = request.form.get("familyHistory")
-        medications = request.form.get("medications")
-        allergies = request.form.get("allergies")
-        review_of_systems = request.form.get("reviewOfSystems")
-        physical_examination = request.form.get("physicalExamination")
-        investigations = request.form.get("investigations")
-        assessment_plan = request.form.get("assessmentPlan")
+# @app.route("/api/medical-report", methods=["POST"])
+# @jwt_required()
+# def create_medical_report():
+#     try:
+#         # Extract form fields from request.form (not request.json)
+#         patient_name = request.form.get("patientName")
+#         age = request.form.get("age")
+#         chief_complaint = request.form.get("chiefComplaint")
+#         history_of_present_illness = request.form.get("historyOfPresentIllness")
+#         past_medical_history = request.form.get("pastMedicalHistory")
+#         family_history = request.form.get("familyHistory")
+#         medications = request.form.get("medications")
+#         allergies = request.form.get("allergies")
+#         review_of_systems = request.form.get("reviewOfSystems")
+#         physical_examination = request.form.get("physicalExamination")
+#         investigations = request.form.get("investigations")
+#         assessment_plan = request.form.get("assessmentPlan")
 
-        # Handle signature file upload
-        if "doctorSignature" not in request.files:
-            return jsonify({"error": "No doctor signature file provided"}), 400
+#         # Handle signature file upload
+#         if "doctorSignature" not in request.files:
+#             return jsonify({"error": "No doctor signature file provided"}), 400
 
-        file = request.files["doctorSignature"]
-        if file.filename == "":
-            return jsonify({"error": "No file selected"}), 400
+#         file = request.files["doctorSignature"]
+#         if file.filename == "":
+#             return jsonify({"error": "No file selected"}), 400
 
-        if not allowed_file(file.filename):
-            return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+#         if not allowed_file(file.filename):
+#             return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
 
-        # Secure the filename and save it
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(file_path)
+#         # Secure the filename and save it
+#         filename = secure_filename(file.filename)
+#         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+#         file.save(file_path)
 
-        # Save report in MongoDB
-        report = MedicalReport(
-            patient_name=patient_name,
-            age=age,
-            chief_complaint=chief_complaint,
-            history_of_present_illness=history_of_present_illness,
-            past_medical_history=past_medical_history,
-            family_history=family_history,
-            medications=medications,
-            allergies=allergies,
-            review_of_systems=review_of_systems,
-            physical_examination=physical_examination,
-            investigations=investigations,
-            assessment_plan=assessment_plan,
-        )
+#         # Save report in MongoDB
+#         report = MedicalReport(
+#             patient_name=patient_name,
+#             age=age,
+#             chief_complaint=chief_complaint,
+#             history_of_present_illness=history_of_present_illness,
+#             past_medical_history=past_medical_history,
+#             family_history=family_history,
+#             medications=medications,
+#             allergies=allergies,
+#             review_of_systems=review_of_systems,
+#             physical_examination=physical_examination,
+#             investigations=investigations,
+#             assessment_plan=assessment_plan,
+#         )
 
-        # Store signature file in MongoDB GridFS
-        with open(file_path, "rb") as f:
-            report.doctor_signature.put(f, content_type=file.content_type)
+#         # Store signature file in MongoDB GridFS
+#         with open(file_path, "rb") as f:
+#             report.doctor_signature.put(f, content_type=file.content_type)
 
-        report.save()
+#         report.save()
 
-        # Optionally, remove the file from the local server
-        os.remove(file_path)
+#         # Optionally, remove the file from the local server
+#         os.remove(file_path)
 
-        return jsonify(
-            {
-                "message": "Medical report created successfully",
-                "patient_name": report.patient_name,
-                "age": report.age,
-                "chief_complaint": report.chief_complaint,
-                "id": str(report.id),
-            }
-        ), 201
+#         return jsonify(
+#             {
+#                 "message": "Medical report created successfully",
+#                 "patient_name": report.patient_name,
+#                 "age": report.age,
+#                 "chief_complaint": report.chief_complaint,
+#                 "id": str(report.id),
+#             }
+#         ), 201
 
 
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 #Update API
 @app.route('/medical-report/<report_id>', methods=['PUT'])
@@ -425,7 +429,8 @@ def get_reports():
                 "physical_examination": report.physical_examination,
                 "investigations": report.investigations,
                 "assessment_plan": report.assessment_plan,
-                "doctor_signature": signature_data  
+                "doctor_signature": signature_data,
+                "compiled_report":report.compiled_report  
             }
             report_list.append(report_dict)
         return jsonify(report_list), 200
@@ -516,7 +521,15 @@ def correct_text():
         )
 
         corrected_text = response.choices[0].message.content.strip()
-        return jsonify({"corrected_text": corrected_text})
+        editor_entry = Editor(result=corrected_text)
+        editor_entry.save()
+
+        # Return response
+        return jsonify({
+            "corrected_text": corrected_text,
+            "record_id": str(editor_entry.id)
+        })
+        # return jsonify({"corrected_text": corrected_text})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -551,49 +564,60 @@ def identify_mistakes():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ 3️⃣ Compiles a structured medical report from form input
-@app.route('/compile-report', methods=['POST'])
-def compile_report():
+@app.route("/compile-report", methods=["POST"])
+def create_medical_report():
     try:
-        data = request.get_json()
+        # Extract form fields from request.form (not request.json)
+        patient_name = request.form.get("patientName")
+        age = request.form.get("age")
+        chief_complaint = request.form.get("chiefComplaint")
+        history_of_present_illness = request.form.get("historyOfPresentIllness")
+        past_medical_history = request.form.get("pastMedicalHistory")
+        family_history = request.form.get("familyHistory")
+        medications = request.form.get("medications")
+        allergies = request.form.get("allergies")
+        review_of_systems = request.form.get("reviewOfSystems")
+        physical_examination = request.form.get("physicalExamination")
+        investigations = request.form.get("investigations")
+        assessment_plan = request.form.get("assessmentPlan")
 
-        # Generate AI medical report
+# Generate AI medical report
         structured_prompt = f"""
             You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
 
             **Patient Information:**
-            - Name: {data.get("patientName", "N/A")}
-            - Age: {data.get("age", "N/A")}
+            - Name: {patient_name}
+            - Age: {age}
 
             **Chief Complaint:**
-            {data.get("chiefComplaint", "N/A")}
+            {chief_complaint}
 
             **History of Present Illness:**
-            {data.get("historyOfPresentIllness", "N/A")}
+            {history_of_present_illness}
 
             **Past Medical History:**
-            {data.get("pastMedicalHistory", "N/A")}
+            {past_medical_history}
 
             **Family History:**
-            {data.get("familyHistory", "N/A")}
+            {family_history}
 
             **Medications:**
-            {data.get("medications", "N/A")}
+            {medications}
 
             **Allergies:**
-            {data.get("allergies", "N/A")}
+            {allergies}
 
             **Review of Systems:**
-            {data.get("reviewOfSystems", "N/A")}
+            {review_of_systems}
 
             **Physical Examination:**
-            {data.get("physicalExamination", "N/A")}
+            {physical_examination}
 
             **Investigations:**
-            {data.get("investigations", "N/A")}
+            {investigations}
 
             **Assessment & Plan:**
-            {data.get("assessmentPlan", "N/A")}
+            {assessment_plan}
         """
 
         response = client.chat.completions.create(
@@ -602,7 +626,54 @@ def compile_report():
         )
 
         compiled_report = response.choices[0].message.content.strip()
-        return jsonify({"compiled_report": compiled_report})
+
+        # Handle signature file upload
+        if "doctorSignature" not in request.files:
+            return jsonify({"error": "No doctor signature file provided"}), 400
+
+        file = request.files["doctorSignature"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        if not allowed_file(file.filename):
+            return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+
+        # Secure the filename and save it
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(file_path)
+
+        # Save report in MongoDB
+        report = MedicalReport(
+            patient_name=patient_name,
+            age=age,
+            chief_complaint=chief_complaint,
+            history_of_present_illness=history_of_present_illness,
+            past_medical_history=past_medical_history,
+            family_history=family_history,
+            medications=medications,
+            allergies=allergies,
+            review_of_systems=review_of_systems,
+            physical_examination=physical_examination,
+            investigations=investigations,
+            assessment_plan=assessment_plan,
+            compiled_report=compiled_report
+        )
+
+        # Store signature file in MongoDB GridFS
+        with open(file_path, "rb") as f:
+            report.doctor_signature.put(f, content_type=file.content_type)
+
+        report.save()
+
+        # Optionally, remove the file from the local server
+        os.remove(file_path)
+
+        return jsonify(
+          {"compiled_report": compiled_report}
+        ), 201
+
+
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

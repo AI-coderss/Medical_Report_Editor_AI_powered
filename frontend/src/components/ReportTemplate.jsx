@@ -100,8 +100,8 @@ function ReportTemplate() {
     try {
       const token = Cookies.get("token");
 
-      // Request to the first API
-      const apiOneRequest = fetch("http://127.0.0.1:5000/api/medical-report", {
+      // Request to the second API
+      const apiTwoRequest = fetch("http://127.0.0.1:5000/compile-report", {
         method: "POST",
         body: formDataToSend,
         headers: {
@@ -109,29 +109,9 @@ function ReportTemplate() {
         },
       });
 
-      // Request to the second API
-      const apiTwoRequest = fetch("http://127.0.0.1:5000/compile-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
       // Wait for both API requests to finish
-      const [apiOneResponse, apiTwoResponse] = await Promise.all([
-        apiOneRequest,
-        apiTwoRequest,
-      ]);
+      const [apiTwoResponse] = await Promise.all([apiTwoRequest]);
 
-      // Handle first API response
-      const apiOneData = await apiOneResponse.json();
-      if (apiOneResponse.ok) {
-        setCompiledReport(apiOneData.compiled_report);
-      } else {
-        setErrors((prevErrors) => ({
-          ...prevErrors,
-          general: "Error: " + apiOneData.error,
-        }));
-      }
       const signatureDataURL =
         signatureRef.current && !signatureRef.current.isEmpty()
           ? signatureRef.current.toDataURL("image/png")

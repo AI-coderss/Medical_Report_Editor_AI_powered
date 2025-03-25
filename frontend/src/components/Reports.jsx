@@ -68,11 +68,14 @@ const MedicalReports = () => {
       }
     });
   };
-
   const filteredReports = reports.filter(
     (report) =>
-      report.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.chief_complaint.toLowerCase().includes(searchQuery.toLowerCase())
+      (report.patient_name?.toLowerCase() || "").includes(
+        searchQuery.toLowerCase()
+      ) ||
+      (report.chief_complaint?.toLowerCase() || "").includes(
+        searchQuery.toLowerCase()
+      )
   );
 
   return (
