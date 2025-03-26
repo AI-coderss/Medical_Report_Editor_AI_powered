@@ -22,18 +22,6 @@ app = Flask(__name__)
 
 
 
-# Enable CORS for frontend communication (React running on localhost:3000)
-
-# CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dsah.onrender.com/"}}, supports_credentials=True)
-
-# CORS(app, resources={r"/*": {
-#     "origins": "https://medical-report-editor-ai-powered-dsah.onrender.com",
-#     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-#     "allow_headers": ["Content-Type", "Authorization"],
-#     "supports_credentials": True
-# }})
-# CORS(app)
-# CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
