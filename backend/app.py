@@ -22,7 +22,18 @@ app = Flask(__name__)
 
 
 
+# Enable CORS for frontend communication (React running on localhost:3000)
 
+# CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dsah.onrender.com/"}}, supports_credentials=True)
+
+# CORS(app, resources={r"/*": {
+#     "origins": "https://medical-report-editor-ai-powered-dsah.onrender.com",
+#     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+#     "allow_headers": ["Content-Type", "Authorization"],
+#     "supports_credentials": True
+# }})
+# CORS(app)
+# CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
@@ -31,7 +42,10 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 connect(db="medical_reports_db", host=MONGO_URI)
 
-
+# Get OpenAI API key from .env file
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OpenAI API key not found. Please set it in the .env file.")
 
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
@@ -43,8 +57,8 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'} 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# # Initialize OpenAI client
-# client = OpenAI(api_key=OPENAI_API_KEY)
+# Initialize OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # User Model
 class User(Document):
@@ -487,278 +501,278 @@ def delete_medical_report(report_id):
 
 
 
-# # ✅ 1️⃣ Corrects and improves the report (Original functionality)
-# @app.route('/correct-text', methods=['POST'])
-# def correct_text():
-#     try:
-#         data = request.get_json()
-#         input_text = data.get("text", "")
+# ✅ 1️⃣ Corrects and improves the report (Original functionality)
+@app.route('/correct-text', methods=['POST'])
+def correct_text():
+    try:
+        data = request.get_json()
+        input_text = data.get("text", "")
 
-#         if not input_text.strip():
-#             return jsonify({"error": "Empty text provided"}), 400
+        if not input_text.strip():
+            return jsonify({"error": "Empty text provided"}), 400
 
-#         structured_prompt = f"""
-#         You are an expert medical editor with deep knowledge of clinical documentation, medical terminology, and structured reporting.
-#         Your task is to refine and improve the following medical report while ensuring:
-#         - Grammatical accuracy
-#         - Professional tone
-#         - Adherence to standard medical documentation formats.
+        structured_prompt = f"""
+        You are an expert medical editor with deep knowledge of clinical documentation, medical terminology, and structured reporting.
+        Your task is to refine and improve the following medical report while ensuring:
+        - Grammatical accuracy
+        - Professional tone
+        - Adherence to standard medical documentation formats.
 
-#         **Formatting Instructions:**
-#         - **The report title should be bold and centered.**
-#         - **All report section headers (Chief Complaint, HPI, etc.) should be bold.**
-#         - **The main content should be normal text (not bold).**
-#         - **Use professional medical terminology throughout.**
+        **Formatting Instructions:**
+        - **The report title should be bold and centered.**
+        - **All report section headers (Chief Complaint, HPI, etc.) should be bold.**
+        - **The main content should be normal text (not bold).**
+        - **Use professional medical terminology throughout.**
 
-#         {input_text}
-#         """
+        {input_text}
+        """
 
-#         response = client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[{"role": "system", "content": structured_prompt}]
-#         )
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": structured_prompt}]
+        )
 
-#         corrected_text = response.choices[0].message.content.strip()
-#         editor_entry = Editor(result=corrected_text)
-#         editor_entry.save()
+        corrected_text = response.choices[0].message.content.strip()
+        editor_entry = Editor(result=corrected_text)
+        editor_entry.save()
 
-#         # Return response
-#         return jsonify({
-#             "corrected_text": corrected_text,
-#             "record_id": str(editor_entry.id)
-#         })
-#         # return jsonify({"corrected_text": corrected_text})
+        # Return response
+        return jsonify({
+            "corrected_text": corrected_text,
+            "record_id": str(editor_entry.id)
+        })
+        # return jsonify({"corrected_text": corrected_text})
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# # ✅ 2️⃣ Identifies mistakes and suggests corrections (New functionality)
-# @app.route('/identify-mistakes', methods=['POST'])
-# def identify_mistakes():
-#     try:
-#         data = request.get_json()
-#         input_text = data.get("text", "")
+# ✅ 2️⃣ Identifies mistakes and suggests corrections (New functionality)
+@app.route('/identify-mistakes', methods=['POST'])
+def identify_mistakes():
+    try:
+        data = request.get_json()
+        input_text = data.get("text", "")
 
-#         if not input_text.strip():
-#             return jsonify({"error": "Empty text provided"}), 400
+        if not input_text.strip():
+            return jsonify({"error": "Empty text provided"}), 400
 
-#         highlight_prompt = f"""
-#         You are an expert proofreader. Analyze the following text and highlight spelling, grammar, and language mistakes.
-#         - **Mistakes should be bold and underlined in red.**
-#         - **Next to each mistake, suggest the correct word inside parentheses.**
-#         - **Keep the rest of the text unchanged.**
+        highlight_prompt = f"""
+        You are an expert proofreader. Analyze the following text and highlight spelling, grammar, and language mistakes.
+        - **Mistakes should be bold and underlined in red.**
+        - **Next to each mistake, suggest the correct word inside parentheses.**
+        - **Keep the rest of the text unchanged.**
 
-#         {input_text}
-#         """
+        {input_text}
+        """
 
-#         response = client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[{"role": "system", "content": highlight_prompt}]
-#         )
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": highlight_prompt}]
+        )
 
-#         identified_mistakes = response.choices[0].message.content.strip()
-#         return jsonify({"highlighted_text": identified_mistakes})
+        identified_mistakes = response.choices[0].message.content.strip()
+        return jsonify({"highlighted_text": identified_mistakes})
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# @app.route("/compile-report", methods=["POST"])
-# def create_medical_report():
-#     try:
-#         # Extract form fields from request.form (not request.json)
-#         patient_name = request.form.get("patientName")
-#         age = request.form.get("age")
-#         chief_complaint = request.form.get("chiefComplaint")
-#         history_of_present_illness = request.form.get("historyOfPresentIllness")
-#         past_medical_history = request.form.get("pastMedicalHistory")
-#         family_history = request.form.get("familyHistory")
-#         medications = request.form.get("medications")
-#         allergies = request.form.get("allergies")
-#         review_of_systems = request.form.get("reviewOfSystems")
-#         physical_examination = request.form.get("physicalExamination")
-#         investigations = request.form.get("investigations")
-#         assessment_plan = request.form.get("assessmentPlan")
+@app.route("/compile-report", methods=["POST"])
+def create_medical_report():
+    try:
+        # Extract form fields from request.form (not request.json)
+        patient_name = request.form.get("patientName")
+        age = request.form.get("age")
+        chief_complaint = request.form.get("chiefComplaint")
+        history_of_present_illness = request.form.get("historyOfPresentIllness")
+        past_medical_history = request.form.get("pastMedicalHistory")
+        family_history = request.form.get("familyHistory")
+        medications = request.form.get("medications")
+        allergies = request.form.get("allergies")
+        review_of_systems = request.form.get("reviewOfSystems")
+        physical_examination = request.form.get("physicalExamination")
+        investigations = request.form.get("investigations")
+        assessment_plan = request.form.get("assessmentPlan")
 
-# # Generate AI medical report
-#         structured_prompt = f"""
-#             You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
+# Generate AI medical report
+        structured_prompt = f"""
+            You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
 
-#             **Patient Information:**
-#             - Name: {patient_name}
-#             - Age: {age}
+            **Patient Information:**
+            - Name: {patient_name}
+            - Age: {age}
 
-#             **Chief Complaint:**
-#             {chief_complaint}
+            **Chief Complaint:**
+            {chief_complaint}
 
-#             **History of Present Illness:**
-#             {history_of_present_illness}
+            **History of Present Illness:**
+            {history_of_present_illness}
 
-#             **Past Medical History:**
-#             {past_medical_history}
+            **Past Medical History:**
+            {past_medical_history}
 
-#             **Family History:**
-#             {family_history}
+            **Family History:**
+            {family_history}
 
-#             **Medications:**
-#             {medications}
+            **Medications:**
+            {medications}
 
-#             **Allergies:**
-#             {allergies}
+            **Allergies:**
+            {allergies}
 
-#             **Review of Systems:**
-#             {review_of_systems}
+            **Review of Systems:**
+            {review_of_systems}
 
-#             **Physical Examination:**
-#             {physical_examination}
+            **Physical Examination:**
+            {physical_examination}
 
-#             **Investigations:**
-#             {investigations}
+            **Investigations:**
+            {investigations}
 
-#             **Assessment & Plan:**
-#             {assessment_plan}
-#         """
+            **Assessment & Plan:**
+            {assessment_plan}
+        """
 
-#         response = client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[{"role": "system", "content": structured_prompt}]
-#         )
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": structured_prompt}]
+        )
 
-#         compiled_report = response.choices[0].message.content.strip()
+        compiled_report = response.choices[0].message.content.strip()
 
-#         # Handle signature file upload
-#         if "doctorSignature" not in request.files:
-#             return jsonify({"error": "No doctor signature file provided"}), 400
+        # Handle signature file upload
+        if "doctorSignature" not in request.files:
+            return jsonify({"error": "No doctor signature file provided"}), 400
 
-#         file = request.files["doctorSignature"]
-#         if file.filename == "":
-#             return jsonify({"error": "No file selected"}), 400
+        file = request.files["doctorSignature"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
 
-#         if not allowed_file(file.filename):
-#             return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+        if not allowed_file(file.filename):
+            return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
 
-#         # Secure the filename and save it
-#         filename = secure_filename(file.filename)
-#         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-#         file.save(file_path)
+        # Secure the filename and save it
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(file_path)
 
-#         # Save report in MongoDB
-#         report = MedicalReport(
-#             patient_name=patient_name,
-#             age=age,
-#             chief_complaint=chief_complaint,
-#             history_of_present_illness=history_of_present_illness,
-#             past_medical_history=past_medical_history,
-#             family_history=family_history,
-#             medications=medications,
-#             allergies=allergies,
-#             review_of_systems=review_of_systems,
-#             physical_examination=physical_examination,
-#             investigations=investigations,
-#             assessment_plan=assessment_plan,
-#             compiled_report=compiled_report
-#         )
+        # Save report in MongoDB
+        report = MedicalReport(
+            patient_name=patient_name,
+            age=age,
+            chief_complaint=chief_complaint,
+            history_of_present_illness=history_of_present_illness,
+            past_medical_history=past_medical_history,
+            family_history=family_history,
+            medications=medications,
+            allergies=allergies,
+            review_of_systems=review_of_systems,
+            physical_examination=physical_examination,
+            investigations=investigations,
+            assessment_plan=assessment_plan,
+            compiled_report=compiled_report
+        )
 
-#         # Store signature file in MongoDB GridFS
-#         with open(file_path, "rb") as f:
-#             report.doctor_signature.put(f, content_type=file.content_type)
+        # Store signature file in MongoDB GridFS
+        with open(file_path, "rb") as f:
+            report.doctor_signature.put(f, content_type=file.content_type)
 
-#         report.save()
+        report.save()
 
-#         # Optionally, remove the file from the local server
-#         os.remove(file_path)
+        # Optionally, remove the file from the local server
+        os.remove(file_path)
 
-#         return jsonify(
-#           {"compiled_report": compiled_report}
-#         ), 201
+        return jsonify(
+          {"compiled_report": compiled_report}
+        ), 201
 
 
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ✅ 4️⃣ Process PDF Report and Convert to Structured Format
-# @app.route('/process-pdf', methods=['POST'])
-# def process_pdf():
-#     try:
-#         if 'file' not in request.files:
-#             return jsonify({"error": "No file uploaded"}), 400
+@app.route('/process-pdf', methods=['POST'])
+def process_pdf():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
 
-#         file = request.files['file']
+        file = request.files['file']
 
-#         # Validate file type
-#         if not file.filename.lower().endswith('.pdf'):
-#             return jsonify({"error": "Invalid file format. Please upload a PDF"}), 400
+        # Validate file type
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "Invalid file format. Please upload a PDF"}), 400
 
-#         # Read PDF and extract text
-#         pdf_text = extract_text_from_pdf(file)
+        # Read PDF and extract text
+        pdf_text = extract_text_from_pdf(file)
 
-#         if not pdf_text.strip():
-#             return jsonify({"error": "Extracted text is empty"}), 400
+        if not pdf_text.strip():
+            return jsonify({"error": "Extracted text is empty"}), 400
 
-#         # Process extracted text with OpenAI
-#         structured_prompt = f"""
-#         You are a medical AI assistant. Convert the following extracted medical report into a **well-structured, formatted, and professional** document:
+        # Process extracted text with OpenAI
+        structured_prompt = f"""
+        You are a medical AI assistant. Convert the following extracted medical report into a **well-structured, formatted, and professional** document:
 
-#         **Formatting Instructions:**
-#         - **Ensure each section title is bold (Chief Complaint, HPI, etc.).**
-#         - **Maintain clinical terminology and ensure medical coherence.**
-#         - **Remove unnecessary noise, page numbers, and artifacts from OCR extraction.**
+        **Formatting Instructions:**
+        - **Ensure each section title is bold (Chief Complaint, HPI, etc.).**
+        - **Maintain clinical terminology and ensure medical coherence.**
+        - **Remove unnecessary noise, page numbers, and artifacts from OCR extraction.**
 
-#         Extracted Report:
-#         {pdf_text}
-#         """
+        Extracted Report:
+        {pdf_text}
+        """
 
-#         response = client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[{"role": "system", "content": structured_prompt}]
-#         )
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": structured_prompt}]
+        )
 
-#         structured_text = response.choices[0].message.content.strip()
-#         return jsonify({"structured_text": structured_text})
+        structured_text = response.choices[0].message.content.strip()
+        return jsonify({"structured_text": structured_text})
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# # ✅ Helper Function: Extract Text from PDF
-# def extract_text_from_pdf(file):
-#     try:
-#         text = ""
-#         with fitz.open(stream=file.read(), filetype="pdf") as doc:
-#             for page in doc:
-#                 text += page.get_text("text") + "\n"
-#         return text
-#     except Exception as e:
-#         return f"Error extracting text: {str(e)}"
+# ✅ Helper Function: Extract Text from PDF
+def extract_text_from_pdf(file):
+    try:
+        text = ""
+        with fitz.open(stream=file.read(), filetype="pdf") as doc:
+            for page in doc:
+                text += page.get_text("text") + "\n"
+        return text
+    except Exception as e:
+        return f"Error extracting text: {str(e)}"
 
-# # ✅ 4️⃣ Translate Medical Report
-# @app.route('/translate', methods=['POST'])
-# def translate_text():
-#     try:
-#         data = request.get_json()
-#         text = data.get("text", "")
-#         target_language = data.get("target_language", "en")  # Default to English
+# ✅ 4️⃣ Translate Medical Report
+@app.route('/translate', methods=['POST'])
+def translate_text():
+    try:
+        data = request.get_json()
+        text = data.get("text", "")
+        target_language = data.get("target_language", "en")  # Default to English
 
-#         if not text.strip():
-#             return jsonify({"error": "No text provided for translation"}), 400
+        if not text.strip():
+            return jsonify({"error": "No text provided for translation"}), 400
 
-#         if target_language not in ["en", "ar", "fr"]:
-#             return jsonify({"error": "Invalid language selected"}), 400
+        if target_language not in ["en", "ar", "fr"]:
+            return jsonify({"error": "Invalid language selected"}), 400
 
-#         translation_prompt = f"""
-#         Translate the following medical report into {target_language.upper()}:
-#         {text}
-#         """
+        translation_prompt = f"""
+        Translate the following medical report into {target_language.upper()}:
+        {text}
+        """
 
-#         response = client.chat.completions.create(
-#             model="gpt-4",
-#             messages=[{"role": "system", "content": translation_prompt}]
-#         )
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": translation_prompt}]
+        )
 
-#         translated_text = response.choices[0].message.content.strip()
-#         return jsonify({"translated_text": translated_text})
+        translated_text = response.choices[0].message.content.strip()
+        return jsonify({"translated_text": translated_text})
 
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
