@@ -104,10 +104,16 @@ def validate_email(email):
 
 def hash_password(password):
     """Hash a password using bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
 def check_password(password, hashed):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    """Check if a password matches the hashed password"""
+    try:
+        if isinstance(hashed, str):
+            hashed = hashed.encode('utf-8')
+    except AttributeError:
+        pass  # hashed is already bytes
+    return bcrypt.checkpw(password.encode('utf-8'), hashed)
 
 # Register Endpoint with Confirm Password
 @app.route('/register', methods=['POST'])
@@ -154,28 +160,31 @@ def register():
         'message': 'User registered successfully'
     }), 201
 
-# Login Endpoint with JWT
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
+    
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
     email = data.get('email')
     password = data.get('password')
 
-    if not all([email, password]):
+    if not email or not password:
         return jsonify({'error': 'Missing email or password'}), 400
 
+    # Fetch the user by email
     user = User.objects(email=email).first()
-    if not user or not check_password(user.password, password):
+
+    # Validate user existence and check password
+    if not user or not check_password(password, user.password):
         return jsonify({'error': 'Invalid email or password'}), 401
 
     # Create JWT tokens
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
 
-    # Create response
+    # Prepare the response with user details
     response = make_response(jsonify({
         'message': 'Login successful',
         'access_token': access_token,
@@ -188,12 +197,17 @@ def login():
         }
     }), 200)
 
-    # Set refresh token in HttpOnly cookie
+    # Set the refresh token in HttpOnly cookie
     response.set_cookie(
-        'token', refresh_token, httponly=True, secure=True, samesite='Strict'
+        'token', 
+        refresh_token, 
+        httponly=True, 
+        secure=True, 
+        samesite='Strict'
     )
 
     return response
+   
 
 # Get Specific User
 
