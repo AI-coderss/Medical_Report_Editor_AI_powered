@@ -26,7 +26,7 @@ app = Flask(__name__)
 
 # CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dysah.onrender.com"}})
 CORS(app, resources={r"/*": {
-    "origins": "https://medical-report-editor-ai-powered-dysah.onrender.com",
+    "origins": "https://medical-report-editor-ai-powered-dsah.onrender.com",
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "allow_headers": ["Content-Type", "Authorization"],
     "supports_credentials": True
