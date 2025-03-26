@@ -36,7 +36,8 @@ const Login = () => {
     try {
       const response = await axios.post(
         "https://medical-report-editor-ai-powered-backend.onrender.com/login",
-        formData
+        formData,
+        { withCredentials: true }
       );
       setMessage(response.data.message || "Login successful!");
       Cookies.set("token", response.data.access_token, { expires: 7 });
