@@ -173,8 +173,8 @@ def login():
         'access_token': access_token,
         'user': {
             'id': str(user.id),
-            'first_name': user.firstName,
-            'last_name': user.lastName,
+            'firstName': user.firstName,
+            'lastName': user.lastName,
             'email': user.email,
             'department': user.department
         }
