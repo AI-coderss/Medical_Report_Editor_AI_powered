@@ -24,7 +24,6 @@ const Login = () => {
     e.preventDefault();
     setMessage("");
     let newErrors = {};
-
     if (!formData.email) newErrors.email = "Email is required";
     else if (!validateEmail(formData.email))
       newErrors.email = "Invalid email format";
@@ -36,11 +35,14 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/login",
+        "https://medical-report-editor-ai-powered-dsah.onrender.com/login",
         formData
       );
       setMessage(response.data.message || "Login successful!");
       Cookies.set("token", response.data.access_token, { expires: 7 });
+      Cookies.set("department", response.data.user.department, { expires: 7 });
+      Cookies.set("FirstName", response.data.user.firstName, { expires: 7 });
+      Cookies.set("LastName", response.data.user.lastName, { expires: 7 });
       // Check if the email is the admin email
       if (formData.email === "admin.samirabbashospital@gmail.com") {
         navigate("/dashboard/users"); // Navigate to the dashboard if the email is admin

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Player } from '@lottiefiles/react-lottie-player';
+import React, { useState, useEffect } from "react";
+import { Player } from "@lottiefiles/react-lottie-player";
 import "../styles/Loader.css";
 
 const Loader = ({ isLoading }) => {
@@ -20,37 +20,36 @@ const Loader = ({ isLoading }) => {
 
   const containerStyle = isMobile
     ? {
-        width: '100px',
-        height: '100px',
-        display: 'flex',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        position: 'fixed',
+        width: "100px",
+        height: "100px",
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        position: "fixed",
       }
     : {
-        width: '200px',
-        height: '200px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: "200px",
+        height: "200px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
       };
 
   const playerStyle = isMobile
     ? {
-        width: '50%',
-        height: '50%',
-        background: 'none',
+        width: "50%",
+        height: "50%",
+        background: "none",
       }
     : {
-        width: '40%',
-        height: '40%',
-        background: 'none',
-        position: 'absolute',
-        transform : 'translate(-50%, -50%)',
-        bottom: '0',
-        top: '550px',
-       
+        width: "40%",
+        height: "40%",
+        background: "none",
+        position: "absolute",
+        transform: "translate(-50%, -50%)",
+        bottom: "0",
+        top: "550px",
       };
 
   return (

@@ -4,7 +4,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import fitz
-from mongoengine import connect, Document, StringField, FileField, ValidationError
+from mongoengine import connect, Document, StringField, FileField, ValidationError, ListField
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
 import re
 import bcrypt
@@ -23,10 +23,10 @@ app = Flask(__name__)
 
 
 # Enable CORS for frontend communication (React running on localhost:3000)
-# CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dysah.onrender.com"}})
+CORS(app, resources={r"/*": {"origins": "https://medical-report-editor-ai-powered-dysah.onrender.com"}})
 # CORS(app)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dysah.onrender.com"]}})
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
 
@@ -58,6 +58,7 @@ class User(Document):
     lastName = StringField(required=True)
     email = StringField(required=True, unique=True)
     password = StringField(required=True)
+    department = StringField()
     
     
 
@@ -111,7 +112,8 @@ def register():
     lastName = data.get('lastName')
     email = data.get('email')
     password = data.get('password')
-    confirmPassword = data.get('confirmPassword')  
+    confirmPassword = data.get('confirmPassword')
+    department = data.get('department')  
 
     # Check for missing fields
     if not all([firstName, lastName, email, password, confirmPassword]):
@@ -131,7 +133,7 @@ def register():
 
     # Hash the password before saving
     hashed_password = hash_password(password)
-    user = User(firstName=firstName, lastName=lastName, email=email, password=hashed_password)
+    user = User(firstName=firstName, lastName=lastName, email=email, password=hashed_password, department=department)
     user.save()
 
     # Return response (excluding password for security)
@@ -140,6 +142,7 @@ def register():
         'firstName': user.firstName,
         'lastName': user.lastName,
         'email': user.email,
+        'department' : user.department,
         'message': 'User registered successfully'
     }), 201
 
@@ -172,7 +175,8 @@ def login():
             'id': str(user.id),
             'first_name': user.firstName,
             'last_name': user.lastName,
-            'email': user.email
+            'email': user.email,
+            'department': user.department
         }
     }), 200)
 

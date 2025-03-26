@@ -8,6 +8,7 @@ const Signup = () => {
     firstName: "",
     lastName: "",
     email: "",
+    department: "",
     password: "",
     confirmPassword: "",
   });
@@ -15,6 +16,15 @@ const Signup = () => {
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const departments = [
+    "Cardiology",
+    "Neurology",
+    "Orthopedics",
+    "Pediatrics",
+    "Radiology",
+    "General Surgery",
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,13 +63,14 @@ const Signup = () => {
     else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
+    if (!formData.department) newErrors.department = "Department is required";
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/register",
+        "https://medical-report-editor-ai-powered-dsah.onrender.com/register",
         formData
       );
       setMessage(response.data.message || "Signup successful!");
@@ -114,7 +125,22 @@ const Signup = () => {
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email}</p>
           )}
-
+          <select
+            name="department"
+            value={formData.department}
+            onChange={handleChange}
+            className="w-full p-2 border rounded mb-2"
+          >
+            <option value="">Select Department</option>
+            {departments.map((dept, index) => (
+              <option key={index} value={dept}>
+                {dept}
+              </option>
+            ))}
+          </select>
+          {errors.department && (
+            <p className="text-red-500 text-sm">{errors.department}</p>
+          )}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}

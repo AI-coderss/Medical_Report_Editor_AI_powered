@@ -15,13 +15,16 @@ const UserList = () => {
     try {
       const token = Cookies.get("token"); // Fetch JWT from cookies
 
-      const response = await fetch("http://127.0.0.1:5000/users", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Attach JWT token in the header
-        },
-      });
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-dsah.onrender.com/users",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Attach JWT token in the header
+          },
+        }
+      );
 
       const data = await response.json();
 
@@ -53,13 +56,16 @@ const UserList = () => {
         try {
           const token = Cookies.get("token"); // Fetch JWT from cookies
 
-          await fetch(`http://127.0.0.1:5000/delete/${id}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`, // Attach JWT token in the header
-            },
-          });
+          await fetch(
+            `https://medical-report-editor-ai-powered-dsah.onrender.com/delete/${id}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`, // Attach JWT token in the header
+              },
+            }
+          );
 
           setUsers(users.filter((user) => user.id !== id));
 

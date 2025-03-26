@@ -28,12 +28,20 @@ import { FaDownload } from "react-icons/fa";
 import MistakeSidebar from "./MistakeSidebar";
 import PDFDownloader from "./PdfDownloader";
 import SignatureCanvas from "react-signature-canvas";
+import Cookies from "js-cookie";
 
 // ✅ Local Storage Keys
 const REPORT_STORAGE_KEY = "savedReportContent";
 const FORMATTED_STORAGE_KEY = "savedFormattedMarkdown";
 const MISTAKES_STORAGE_KEY = "savedMistakes";
 const SIGNATURE_STORAGE_KEY = "savedSignature";
+const department = Cookies.get("department") || "Unknown Department";
+const firstName = Cookies.get("FirstName") || "Unknown";
+const lastName = Cookies.get("LastName") || "Doctor";
+
+console.log("Department:", department);
+console.log("First Name:", firstName);
+console.log("Last Name:", lastName);
 
 // ✅ Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
@@ -182,7 +190,7 @@ function ReportEditor() {
     try {
       // 1️⃣ Correct the text first (updates editor content)
       const correctResponse = await fetch(
-        "http://127.0.0.1:5000/correct-text",
+        "https://medical-report-editor-ai-powered-dsah.onrender.com/correct-text",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -341,6 +349,12 @@ function ReportEditor() {
         )}
         {signature && (
           <div className="signature-display">
+            <p>
+              <strong>Doctor Name:</strong> {firstName} {lastName}
+            </p>
+            <p>
+              <strong>Department:</strong> {department}
+            </p>
             <img
               src={signature}
               alt="Saved Signature"
