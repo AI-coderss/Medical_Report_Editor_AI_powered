@@ -102,7 +102,7 @@ function ReportTemplate() {
 
       // Request to the second API
       const apiTwoRequest = fetch(
-        "https://medical-report-editor-ai-powered-dsah.onrender.com/compile-report",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report",
         {
           method: "POST",
           body: formDataToSend,

@@ -70,7 +70,7 @@ const Signup = () => {
 
     try {
       const response = await axios.post(
-        "https://medical-report-editor-ai-powered-dsah.onrender.com/register",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/register",
         formData
       );
       setMessage(response.data.message || "Signup successful!");

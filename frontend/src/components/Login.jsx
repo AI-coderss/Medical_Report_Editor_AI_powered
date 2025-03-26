@@ -35,7 +35,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "https://medical-report-editor-ai-powered-dsah.onrender.com/login",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/login",
         formData
       );
       setMessage(response.data.message || "Login successful!");

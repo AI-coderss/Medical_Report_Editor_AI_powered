@@ -15,7 +15,7 @@ const MedicalReports = () => {
       const token = Cookies.get("token");
 
       const response = await fetch(
-        "https://medical-report-editor-ai-powered-dsah.onrender.com/reports",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/reports",
         {
           method: "GET",
           headers: {
@@ -47,7 +47,7 @@ const MedicalReports = () => {
       if (result.isConfirmed) {
         try {
           const response = await fetch(
-            `https://medical-report-editor-ai-powered-dsah.onrender.com/report-delete/${reportId}`,
+            `https://medical-report-editor-ai-powered-backend.onrender.com/report-delete/${reportId}`,
             {
               method: "DELETE",
               headers: {

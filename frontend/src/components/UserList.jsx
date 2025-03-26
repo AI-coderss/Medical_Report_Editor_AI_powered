@@ -16,7 +16,7 @@ const UserList = () => {
       const token = Cookies.get("token"); // Fetch JWT from cookies
 
       const response = await fetch(
-        "https://medical-report-editor-ai-powered-dsah.onrender.com/users",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/users",
         {
           method: "GET",
           headers: {
@@ -57,7 +57,7 @@ const UserList = () => {
           const token = Cookies.get("token"); // Fetch JWT from cookies
 
           await fetch(
-            `https://medical-report-editor-ai-powered-dsah.onrender.com/delete/${id}`,
+            `https://medical-report-editor-ai-powered-backend.onrender.com/delete/${id}`,
             {
               method: "DELETE",
               headers: {
