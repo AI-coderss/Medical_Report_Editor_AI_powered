@@ -128,15 +128,16 @@ label {
 }
 
 /* Restored Field Sizes to Fit Data */
-input {
+input,
+select {
   width: 100%;
-  padding: 6px;
+  padding: 14px 12px !important;
   margin-top: 5px;
-  border: 1px solid #ccc;
+  border: 1px solid #45474c !important;
   border-radius: 4px;
-  font-size: 14px;
+  color: #220404 !important;
+  margin-bottom: 6px;
 }
-
 textarea {
   width: 100%;
   padding: 6px;
@@ -191,12 +192,12 @@ textarea[name="doctorSignature"] {
 }
 
 button {
-  margin-top: 5px;
   padding: 5px 10px;
   background: red;
   color: white;
   border: none;
   cursor: pointer;
+  margin-block: 2px;
 }
 
 button:hover {

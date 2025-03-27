@@ -11,7 +11,7 @@ const DownloadPDF = ({ report }) => {
     const doctorDepartment = Cookies.get("department") || "Unknown Department";
 
     // Load logo
-    const logoUrl = "logo.png"; // Replace with actual logo
+    const logoUrl = "/logo.png"; // Replace with actual logo
 
     // Add logo at the top-right
     const imgWidth = 60,

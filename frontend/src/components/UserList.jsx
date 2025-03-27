@@ -91,18 +91,19 @@ const UserList = () => {
 
   return (
     <div className="p-4 w-full">
-      <h2 className="text-4xl text-center font-bold text-red-600 mb-4">
-        User List
-      </h2>
-
       {/* Search Bar */}
-      <input
-        type="text"
-        placeholder="Search by name or email..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="border p-2 mb-4 w-full rounded user-input"
-      />
+      <div className="inputdiv">
+        <h2 className="text-4xl text-center font-bold text-red-600 mb-4">
+          User List
+        </h2>
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="border p-2  w-full rounded user-input"
+        />
+      </div>
 
       {/* User Table */}
       <table className="w-full border-collapse border border-gray-300">

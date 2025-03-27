@@ -9,6 +9,7 @@
   transform: translateY(5%);
   border-top: 5px solid #007bff;
   box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+  padding: 20px;
 }
 .sign-form input {
   padding: 14px 12px;
@@ -43,6 +44,9 @@
   transform: translateY(30%);
   border-top: 5px solid #007bff;
   box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+  width: 40%;
+  margin: 100px auto;
+  padding: 20px;
 }
 .login-form input {
   padding: 14px 12px;
@@ -61,9 +65,9 @@
 }
 /* signature css start */
 .signature-display {
-  text-align: right;
-  display: flex;
-  justify-content: right;
+  text-align: left;
+  /* display: flex;
+  justify-content: right; */
 }
 .signature-display img {
   display: flex;

@@ -3,6 +3,7 @@ import axios from "axios";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import "../styles/signup.css";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -55,7 +56,7 @@ const Login = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg login-form">
+    <div className=" mx-auto p-6 bg-white shadow-md rounded-lg login-form">
       <div className="logo-img">
         <img src="logo.png" alt="" />
       </div>

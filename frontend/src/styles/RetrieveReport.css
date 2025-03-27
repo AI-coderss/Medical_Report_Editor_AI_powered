@@ -1,0 +1,7 @@
+.container-sec {
+  display: flex;
+  align-items: center;
+  height: 53vh;
+  width: 90%;
+  margin: 0px auto;
+}

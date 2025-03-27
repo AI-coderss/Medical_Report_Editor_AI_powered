@@ -104,7 +104,7 @@ const Navbar = () => {
           ))}
           <div
             className="navItemActiveContainer"
-            style={{ transform: `translateX(${activeIndex * 200}px)` }}
+            style={{ transform: `translateX(${activeIndex * 160}px)` }}
           >
             <div className="navItemActive">
               <div className="navItemActiveLeft"></div>

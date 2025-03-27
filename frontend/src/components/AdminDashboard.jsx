@@ -6,7 +6,7 @@ const Dashboard = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <div className="p-4 w-full">
+      <div className="p-4 w-full left-content">
         <Outlet /> {/* This will render the appropriate child component */}
       </div>
     </div>

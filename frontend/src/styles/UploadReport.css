@@ -1,95 +1,100 @@
 .upload-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    height: 100vh;
-    background-color: #f4f4f4;
-    padding-top: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  background-color: #f4f4f4;
+  padding-top: 80px;
 }
-  
+
 .toolbar {
-    display: flex;
-    flex-direction: row; /* ✅ Ensures items are placed side by side */
-    justify-content: center; /* Centers items horizontally */
-    align-items: center; /* Aligns buttons vertically */
-    gap: 15px; /* Adds space between buttons */
-    width: 100%;
-    background: #fff;
-    padding: 12px 20px;
-    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: row; /* ✅ Ensures items are placed side by side */
+  justify-content: center; /* Centers items horizontally */
+  align-items: center; /* Aligns buttons vertically */
+  gap: 15px; /* Adds space between buttons */
+  width: 100%;
+  background: #fff;
+  padding: 12px 20px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.upload-btn, .clear-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    width: 140px;
-    text-align: center;
-    white-space: nowrap; /* ✅ Prevents button text from breaking */
-    transition: background 0.3s ease-in-out;
+.upload-btn,
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  width: 140px;
+  text-align: center;
+  white-space: nowrap; /* ✅ Prevents button text from breaking */
+  transition: background 0.3s ease-in-out;
 }
 
-.upload-btn:hover, .clear-btn:hover {
-    background: #007bff;
+.upload-btn:hover,
+.clear-btn:hover {
+  background: #007bff;
 }
 
 .word-like-editor {
-    background: white;
-    width: 800px;
-    min-height: 1200px;
-    padding: 30px;
-    margin-top: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    font-family: "Arial", sans-serif;
-    line-height: 1.6;
+  background: white;
+  width: 800px;
+  min-height: 1200px;
+  padding: 30px;
+  margin-top: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  font-family: "Arial", sans-serif;
+  line-height: 1.6;
 }
 
 .upload-btn input {
-    display: none;
+  display: none;
 }
 .select-menu {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    position: relative;
-    margin-left: 15px; /* ✅ Ensures space between Clear & Translate */
-  }
-  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  margin-left: 15px; /* ✅ Ensures space between Clear & Translate */
+}
 
-  
-  .translate-btn:hover {
-    background: #e68900;
-  }
-  
-  .select {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 10px;
-    padding: 10px 15px;
-    color: black;
-    font-weight: 500;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-  }
-  
-  .select:hover {
-    background: linear-gradient(145deg, #00B0F0, #00D4FF);
-    color: #fff;
-  }
-  
+.translate-btn {
+  width: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
 
-  
+.translate-btn:hover {
+  background: #e68900;
+}
+
+.select {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 10px 15px;
+  color: black;
+  font-weight: 500;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.select:hover {
+  background: linear-gradient(145deg, #00b0f0, #00d4ff);
+  color: #fff;
+}

@@ -1,12 +1,23 @@
 .table-main {
-  background: #13934a;
+  background: #00bdf5;
 }
 .table-main th {
   padding-block: 20px;
   font-size: 18px;
 }
+.inputdiv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
 .user-input {
   padding: 14px 30px;
   font-size: 20px;
   border-radius: 30px;
+  width: 50%;
+}
+.inputdiv h2 {
+  font-size: 40px;
+  font-family: math;
 }

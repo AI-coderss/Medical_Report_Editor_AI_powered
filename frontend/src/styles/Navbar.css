@@ -116,9 +116,9 @@ a {
 .navItemActiveContainer {
   position: absolute;
   height: 60px;
-  width: 260px;
+  width: 200px;
   bottom: 0;
-  right: 570px;
+  /* right: 570px; */
   z-index: 1;
   transition: right 0.3s ease;
   margin: 0;
@@ -127,7 +127,7 @@ a {
 .navItemActive {
   position: absolute;
   height: 60px;
-  width: 260px;
+  width: 160px;
   margin: 0;
 }
 
@@ -149,7 +149,7 @@ a {
   background: white;
   width: 30px;
   height: 60px;
-  left: 0;
+  left: -40px;
   border-radius: 0px 0px 0px 0px;
   z-index: 1;
   margin: 0;
@@ -157,9 +157,9 @@ a {
 
 .navItemActiveCenter {
   background: white;
-  width: 200px;
+  width: 140px;
   height: 60px;
-  left: 30px;
+  left: -10px;
   border-radius: 30px 30px 0px 0px;
   z-index: 1;
   margin: 0;
@@ -169,7 +169,7 @@ a {
   background: white;
   width: 30px;
   height: 60px;
-  right: 0;
+  right: -40px;
   border-radius: 0px 0px 0px 0px;
   z-index: 1;
   margin: 0;
@@ -187,7 +187,7 @@ a {
   background: white;
   width: 30px;
   height: 60px;
-  left: 0;
+  left: -40px;
   border-radius: 0px 0px 30px 0px;
   background: #007bff;
   z-index: 2;
@@ -196,7 +196,7 @@ a {
 
 .navItemActiveCopyCenter {
   background: white;
-  width: 200px;
+  width: 140px;
   height: 60px;
   left: 30px;
   border-radius: 30px 30px 0px 0px;
@@ -208,7 +208,7 @@ a {
   background: white;
   width: 30px;
   height: 60px;
-  right: 0;
+  right: -40px;
   border-radius: 0px 0px 0px 30px;
   background: #007bff;
   z-index: 2;

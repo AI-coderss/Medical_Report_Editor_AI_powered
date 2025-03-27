@@ -727,6 +727,7 @@ def doctor_report():
         signature_base64 = base64.b64encode(signature_data).decode('utf-8')  # Convert to base64 string
         
         report_list.append({
+            "id": str(report.id),
             "patient_name": report.patient_name,
             "age": report.age,
             "chief_complaint": report.chief_complaint,

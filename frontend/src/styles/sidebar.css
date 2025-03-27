@@ -1,14 +1,256 @@
-.active {
-  color: white !important;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-.logo-icon img {
+
+.sidebar-wrapper {
+  display: flex;
+  align-items: flex-start;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+}
+
+.sidebar {
+  width: 60px;
+  height: 100vh;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: width 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.sidebar:hover:not(.open) {
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar.open {
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar .profile {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  color: rgb(0, 0, 0);
+  transition: padding 0.3s ease;
   width: 100%;
 }
-.tabs {
-  padding: 15px 10px;
-  font-size: 20px;
+
+.sidebar img {
+  position: relative;
+  left: 18px;
+  opacity: 1;
+  /* border-radius: 50%; */
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  transition: width 0.3s ease, height 0.3s ease;
+  border: none;
+  background: none;
 }
-.main-sidebar {
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px,
-    rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+
+.sidebar .profile span {
+  margin-left: 30px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.sidebar.open img,
+.sidebar:hover img {
+  width: 80%;
+  height: 100%;
+}
+
+.sidebar.open .profile span,
+.sidebar:hover .profile span {
+  opacity: 1;
+}
+
+.sidebar ul {
+  position: relative;
+  left: -13px;
+  list-style-type: none;
+  padding: 20px 0;
+}
+
+.sidebar ul li {
+  display: flex;
+  align-items: center;
+  padding: 20px 20px;
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  transition: background 0.3s ease;
+  border-radius: 8px;
+}
+
+.sidebar ul li:hover {
+  background: #78e9ff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.sidebar ul li i {
+  position: relative;
+  left: 4px;
+  font-size: 24px;
+  margin-right: 20px;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar ul li span {
+  margin-left: 15px;
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.open ul li span,
+.sidebar:hover ul li span {
+  opacity: 1;
+}
+
+.sidebar .indicator {
+  position: absolute;
+  left: 15px;
+  width: 4px;
+  height: 10px;
+  background: linear-gradient(145deg, #00b0f0, #00d4ff);
+  transition: top 0.3s ease;
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+.toggle-btn {
+  position: absolute;
+  top: 10px;
+  right: -20px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(145deg, #00b0f0, #00d4ff);
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 1000;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.nav-link {
+  text-decoration: none;
+  color: rgb(0, 0, 0);
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.nav-link :hover & ul {
+  color: #fff;
+}
+
+/* ✅ Language Selector Footer Inside the Sidebar */
+.sidebar-footer {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.content {
+  position: fixed;
+  text-align: center;
+  width: calc(100% - 160px);
+  margin-left: 100px;
+  top: 15%;
+  transition: color 0.5s ease, transform 0.3s ease, width 0.3s ease;
+}
+
+.sidebar.open ~ .content {
+  margin-left: 200px;
+  width: calc(100% - 200px);
+}
+
+.content-line {
+  width: 120px;
+  margin-top: 3px;
+  height: 1.5px;
+  background-color: rgba(0, 0, 0, 0.5);
+  outline: none;
+  border: none;
+  border-radius: 50px;
+  transition: background-color 0.5s ease;
+}
+
+.content:hover {
+  color: #0d6efd;
+  text-shadow: rgba(56, 122, 179, 0.8) 1px 0 10px;
+}
+.icon {
+  font-size: 24px;
+  color: rgb(0, 0, 0);
+}
+.icon:hover {
+  color: #fff;
+}
+/* Sidebar Footer for Language Selector Positioning */
+.sidebar-footer {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* ✅ Hides the Language Selector when Sidebar is Closed on Mobile */
+.sidebar-footer.hidden {
+  display: none;
+}
+
+/* ================================ */
+/* ✅ New Hamburger Menu for Mobile */
+/* ================================ */
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%; /* Hidden offscreen by default */
+    height: 100vh;
+    width: 290px;
+    transition: left 0.3s ease;
+    z-index: 1050;
+  }
+
+  .sidebar.open {
+    left: 0; /* Slides into view */
+  }
+
+  .toggle-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+  }
+}
+
+.left-content {
+  /* height: 100vh; */
+  width: calc(100% - 300px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 50px auto;
 }
