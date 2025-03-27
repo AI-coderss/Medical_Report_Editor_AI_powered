@@ -91,6 +91,7 @@ class MedicalReport(Document):
     doctor_signature = FileField()
     result = StringField()
     compiled_report=StringField()
+    doctor_id = StringField(required=True)
 # class Editor(Document):
 #     text = StringField(required=True)
 #     result = StringField(required=True)
@@ -591,8 +592,10 @@ def identify_mistakes():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/compile-report", methods=["POST"])
+@jwt_required()
 def create_medical_report():
     try:
+        
         # Extract form fields from request.form (not request.json)
         patient_name = request.form.get("patientName")
         age = request.form.get("age")
@@ -606,6 +609,8 @@ def create_medical_report():
         physical_examination = request.form.get("physicalExamination")
         investigations = request.form.get("investigations")
         assessment_plan = request.form.get("assessmentPlan")
+        doctor_id = get_jwt_identity()
+        print(doctor_id, "fhghghfghfhgghgh")
 
 # Generate AI medical report
         structured_prompt = f"""
@@ -683,9 +688,10 @@ def create_medical_report():
             physical_examination=physical_examination,
             investigations=investigations,
             assessment_plan=assessment_plan,
-            compiled_report=compiled_report
+            doctor_id = doctor_id,
+            compiled_report=compiled_report,
+            
         )
-
         # Store signature file in MongoDB GridFS
         with open(file_path, "rb") as f:
             report.doctor_signature.put(f, content_type=file.content_type)
@@ -695,14 +701,50 @@ def create_medical_report():
         # Optionally, remove the file from the local server
         os.remove(file_path)
 
-        return jsonify(
-          {"compiled_report": compiled_report}
-        ), 201
-
+        return jsonify({
+            "compiled_report": compiled_report,
+            "report_id": str(report.id),
+            "doctor_id": doctor_id
+        }), 201
 
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/doctor-report', methods=['GET'])
+@jwt_required()
+def doctor_report():
+    doctor_id = get_jwt_identity()
+    print(doctor_id)
+    reports = MedicalReport.objects(doctor_id=doctor_id)
+    if not reports:
+        return jsonify({"message": "No report found for this doctor"}), 404
+    
+    report_list = []
+    for report in reports:
+        # Read the GridFS file (doctor_signature) and encode it as base64
+        signature_data = report.doctor_signature.read()  
+        signature_base64 = base64.b64encode(signature_data).decode('utf-8')  # Convert to base64 string
+        
+        report_list.append({
+            "patient_name": report.patient_name,
+            "age": report.age,
+            "chief_complaint": report.chief_complaint,
+            "history_of_present_illness": report.history_of_present_illness,
+            "past_medical_history": report.past_medical_history,
+            "family_history": report.family_history,
+            "medications": report.medications,
+            "allergies": report.allergies,
+            "review_of_systems": report.review_of_systems,
+            "physical_examination": report.physical_examination,
+            "investigations": report.investigations,
+            "assessment_plan": report.assessment_plan,
+            "compiled_report": report.compiled_report,
+            "doctor_signature": signature_base64,  # Include the base64-encoded signature
+        })
+    
+    return jsonify(report_list), 200  # Move return outside the loop
+
 
 # ✅ 4️⃣ Process PDF Report and Convert to Structured Format
 @app.route('/process-pdf', methods=['POST'])

@@ -26,6 +26,9 @@ function ReportTemplate() {
   const [loading, setLoading] = useState(false);
   const [signatureBase64, setSignatureBase64] = useState("");
   const signatureRef = useRef(null);
+  const department = Cookies.get("department") || "Unknown Department";
+  const firstName = Cookies.get("FirstName") || "Unknown";
+  const lastName = Cookies.get("LastName") || "Doctor";
 
   const validateForm = () => {
     let newErrors = {};
@@ -126,7 +129,7 @@ function ReportTemplate() {
       if (apiTwoResponse.ok) {
         setCompiledReport(
           (prevCompiledReport) =>
-            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n\nDoctor Signature:\n${signatureImageTag}`
+            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n\nDoctor Name: ${firstName} ${lastName}\nDoctor Department: ${department}\nDoctor Signature: ${signatureImageTag}`
         );
       } else {
         alert("Error: " + apiTwoData.error);

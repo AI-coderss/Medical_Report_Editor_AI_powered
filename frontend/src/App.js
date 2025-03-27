@@ -10,6 +10,7 @@ import ProtectedRoute from './routeprotection/ProtectedRoute';
 import Dashboard from './components/AdminDashboard';
 import UserList from "./components/UserList";
 import MedicalReports from './components/Reports';
+import RetrieveReport from './components/RetrieveReport';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="reports" element={<MedicalReports />} />
           </Route>
           <Route path="/editor" element={<><Navbar /><ReportEditor /></>} />
+          <Route path="/retrieve-report" element={<><Navbar /><RetrieveReport /></>} />
           <Route path="/template" element={<><Navbar /><ReportTemplate /></>} />
           <Route path="/upload-report" element={<><Navbar /><UploadReport /></>} />
           <Route path="/settings" element={<><Navbar /><h2>Settings Page</h2></>} />

@@ -39,10 +39,6 @@ const department = Cookies.get("department") || "Unknown Department";
 const firstName = Cookies.get("FirstName") || "Unknown";
 const lastName = Cookies.get("LastName") || "Doctor";
 
-console.log("Department:", department);
-console.log("First Name:", firstName);
-console.log("Last Name:", lastName);
-
 // ✅ Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
   const text = contentBlock.getText();
@@ -354,6 +350,9 @@ function ReportEditor() {
             </p>
             <p>
               <strong>Department:</strong> {department}
+            </p>
+            <p>
+              <strong>Signature:</strong>
             </p>
             <img
               src={signature}

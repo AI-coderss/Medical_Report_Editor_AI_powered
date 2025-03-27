@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import "../styles/signup.css";
+import Swal from "sweetalert2";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -73,9 +74,28 @@ const Signup = () => {
         "https://medical-report-editor-ai-powered-backend.onrender.com/register",
         formData
       );
-      setMessage(response.data.message || "Signup successful!");
+      Swal.fire({
+        title: "Success!",
+        text: response.data.message || "Signup successful!",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
+
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        department: "",
+        password: "",
+        confirmPassword: "",
+      });
     } catch (error) {
-      setMessage(error.response?.data?.message || "Signup failed. Try again.");
+      Swal.fire({
+        title: "Error!",
+        text: error.response?.data?.message || "Signup failed!",
+        icon: "error",
+        confirmButtonText: "Try Again",
+      });
     }
   };
 

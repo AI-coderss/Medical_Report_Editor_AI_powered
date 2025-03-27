@@ -39,10 +39,19 @@ const Navbar = () => {
   const toggleMenu = () => {
     setMenuOpen((prev) => !prev);
   };
+
   const handleLogout = () => {
     Cookies.remove("token"); // Remove the authentication token from cookies
     navigate("/login"); // Redirect to the login page
   };
+
+  const menuItems = [
+    { label: "Editor ✍️", path: "/editor" },
+    { label: "Templates 📋", path: "/template" },
+    { label: "Upload Report 📤", path: "/upload-report" },
+    { label: "Retrieve Report 📄", path: "/retrieve-report" }, // New tab added
+    { label: "Settings ⚙️", path: "/settings" },
+  ];
 
   return (
     <div className="nav">
@@ -63,29 +72,16 @@ const Navbar = () => {
           </div>
           {menuOpen && (
             <div className="dropdownMenu">
-              {[
-                "Editor ✍️",
-                "Templates 📋",
-                "Upload Report 📤",
-                "Settings ⚙️",
-              ].map((label, index) => (
+              {menuItems.map((item, index) => (
                 <Link
-                  to={
-                    index === 0
-                      ? "/editor"
-                      : index === 1
-                      ? "/template"
-                      : index === 2
-                      ? "/upload-report"
-                      : "/settings"
-                  }
+                  to={item.path}
                   key={index}
                   className={`mobileNavItem ${
                     activeIndex === index ? "active" : ""
                   }`}
                   onClick={() => handleNavigation(index)}
                 >
-                  {label}
+                  {item.label}
                 </Link>
               ))}
               <button className="logout-btn mobile" onClick={handleLogout}>
@@ -96,26 +92,16 @@ const Navbar = () => {
         </div>
       ) : (
         <div className="navItemContainer">
-          {["Editor ✍️", "Templates 📋", "Upload Report 📤", "Settings ⚙️"].map(
-            (label, index) => (
-              <Link
-                to={
-                  index === 0
-                    ? "/editor"
-                    : index === 1
-                    ? "/template"
-                    : index === 2
-                    ? "/upload-report"
-                    : "/settings"
-                }
-                key={index}
-                className={`navItem ${activeIndex === index ? "active" : ""}`}
-                onClick={() => handleNavigation(index)}
-              >
-                {label}
-              </Link>
-            )
-          )}
+          {menuItems.map((item, index) => (
+            <Link
+              to={item.path}
+              key={index}
+              className={`navItem ${activeIndex === index ? "active" : ""}`}
+              onClick={() => handleNavigation(index)}
+            >
+              {item.label}
+            </Link>
+          ))}
           <div
             className="navItemActiveContainer"
             style={{ transform: `translateX(${activeIndex * 200}px)` }}
