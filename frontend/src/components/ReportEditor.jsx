@@ -305,10 +305,10 @@ function ReportEditor() {
           <PDFDownloader
             content={formattedMarkdown}
             fileName="Medical_Report.pdf"
+            signature={signature}
           >
             <FaDownload />
           </PDFDownloader>
-
           {/* Edit Button */}
           <button
             className="edit-btn"

@@ -5,3 +5,9 @@
   width: 90%;
   margin: 0px auto;
 }
+.flex-sec {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  flex-wrap: wrap;
+}

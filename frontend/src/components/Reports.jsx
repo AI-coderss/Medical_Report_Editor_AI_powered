@@ -202,9 +202,14 @@ const MedicalReports = () => {
 
                 {/* Modal Content */}
                 <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-50 relative">
-                  <h2 className="text-xl font-semibold mb-4 text-center">
-                    Compiled Report
-                  </h2>
+                  <div className="flex-sec">
+                    <h2 className="text-xl font-semibold mb-4 text-center">
+                      Medical Report
+                    </h2>
+                    <h3 className="text-xl font-semibold mb-4 text-center">
+                      Report Id:{selectedReport.id}
+                    </h3>
+                  </div>
                   <div className="max-h-96 overflow-y-auto p-4 border rounded">
                     <p className="whitespace-pre-wrap">
                       {selectedReport.compiled_report ||

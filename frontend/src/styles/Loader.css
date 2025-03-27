@@ -115,3 +115,12 @@
   display: flex;
   justify-content: center;
 }
+.flex-sec {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  flex-wrap: wrap;
+}
+td {
+  width: 35px;
+}

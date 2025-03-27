@@ -129,7 +129,7 @@ function ReportTemplate() {
       if (apiTwoResponse.ok) {
         setCompiledReport(
           (prevCompiledReport) =>
-            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n\nDoctor Name: ${firstName} ${lastName}\nDoctor Department: ${department}\nDoctor Signature: ${signatureImageTag}`
+            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n`
         );
       } else {
         alert("Error: " + apiTwoData.error);
@@ -307,6 +307,7 @@ function ReportTemplate() {
               <PDFDownloader
                 content={compiledReport}
                 fileName="Medical_Report.pdf"
+                signature={signatureBase64}
               />
             </>
           ) : (

@@ -1,6 +1,6 @@
 // Sidebar.jsx
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "../styles/sidebar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,6 +17,7 @@ import {
   faUsers,
   faFileAlt,
 } from "@fortawesome/free-solid-svg-icons";
+import Cookies from "js-cookie";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,6 +44,12 @@ const Sidebar = () => {
       });
     });
   }, []);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    Cookies.remove("token"); // Remove the authentication token
+    navigate("/login"); // Redirect to the login page
+  };
 
   const handleToggle = () => {
     setIsOpen(!isOpen);
@@ -98,10 +105,11 @@ const Sidebar = () => {
           </li>
           <li>
             <NavLink
-              to="/logout"
+              to="/login"
               className={({ isActive }) =>
                 isActive ? "nav-link active" : "nav-link"
               }
+              onClick={handleLogout}
             >
               <FontAwesomeIcon icon={faRightFromBracket} className="icon" />
               <span>Logout</span>
