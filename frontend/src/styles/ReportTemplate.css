@@ -193,7 +193,7 @@ textarea[name="doctorSignature"] {
 
 button {
   padding: 5px 10px;
-  background: red;
+  background: #01acdf;
   color: white;
   border: none;
   cursor: pointer;
@@ -201,5 +201,5 @@ button {
 }
 
 button:hover {
-  background: darkred;
+  background: #05c0f9;
 }

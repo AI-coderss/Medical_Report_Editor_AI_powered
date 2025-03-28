@@ -1,13 +1,42 @@
 .container-sec {
   display: flex;
-  align-items: center;
-  height: 53vh;
+  height: 63vh;
   width: 90%;
   margin: 0px auto;
+  min-height: 75vh;
+  z-index: -1;
+  position: relative;
+}
+.container-sec > div {
+  margin-block: 90px 0;
+}
+div#root {
+  z-index: 0;
+  position: relative;
 }
 .flex-sec {
   display: flex;
   justify-content: space-between;
   padding: 10px;
   flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  margin: 0 5px;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+.tab.active {
+  background-color: #4caf50;
+  color: white;
 }

@@ -184,12 +184,17 @@ function ReportEditor() {
     setLoading(true);
 
     try {
+      const token = Cookies.get("token");
+
       // 1️⃣ Correct the text first (updates editor content)
       const correctResponse = await fetch(
         "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ text: plainText }),
         }
       );

@@ -34,9 +34,9 @@ const DownloadPDF = ({ report }) => {
     const margin = 10;
     const pageHeight = doc.internal.pageSize.height;
     const maxHeight = pageHeight - 50; // Leave space for doctor details
-
+    const textToSplit = report.compiled_report || report.result;
     // Split and add report text with auto pagination
-    const splitText = doc.splitTextToSize(report.compiled_report, 180);
+    const splitText = doc.splitTextToSize(textToSplit, 180);
     splitText.forEach((line) => {
       if (y + 10 > maxHeight) {
         doc.addPage();

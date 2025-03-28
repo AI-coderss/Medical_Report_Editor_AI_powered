@@ -95,8 +95,12 @@ class MedicalReport(Document):
 # class Editor(Document):
 #     text = StringField(required=True)
 #     result = StringField(required=True)
+# class Editor(Document):
+#     result = StringField(required=True)
+#     meta = {'collection': 'corrected_reports'}
 class Editor(Document):
     result = StringField(required=True)
+    doctor_id = StringField(required=True)    
     meta = {'collection': 'corrected_reports'}
 
 def validate_email(email):
@@ -514,10 +518,9 @@ def delete_medical_report(report_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
 # ✅ 1️⃣ Corrects and improves the report (Original functionality)
 @app.route('/correct-text', methods=['POST'])
+@jwt_required()
 def correct_text():
     try:
         data = request.get_json()
@@ -548,7 +551,8 @@ def correct_text():
         )
 
         corrected_text = response.choices[0].message.content.strip()
-        editor_entry = Editor(result=corrected_text)
+        doctor_id = get_jwt_identity()
+        editor_entry = Editor(result=corrected_text,doctor_id=doctor_id)
         editor_entry.save()
 
         # Return response
@@ -560,6 +564,72 @@ def correct_text():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/editor-report', methods=['GET'])
+@jwt_required()
+def editor_report():
+    doctor_id = get_jwt_identity()
+    reports = Editor.objects(doctor_id=doctor_id)
+    
+    if not reports:
+        return jsonify({"message": "No report found for this doctor"}), 404
+    
+    data_list = []  # Define data_list here
+    
+    for item in reports:
+        data_list.append({
+            "id":str(item.id),
+            "result": item.result,
+        })
+    
+    return jsonify(data_list), 200
+
+
+
+# ✅ 1️⃣ Corrects and improves the report (Original functionality)
+# @app.route('/correct-text', methods=['POST'])
+# def correct_text():
+#     try:
+#         data = request.get_json()
+#         input_text = data.get("text", "")
+
+#         if not input_text.strip():
+#             return jsonify({"error": "Empty text provided"}), 400
+
+#         structured_prompt = f"""
+#         You are an expert medical editor with deep knowledge of clinical documentation, medical terminology, and structured reporting.
+#         Your task is to refine and improve the following medical report while ensuring:
+#         - Grammatical accuracy
+#         - Professional tone
+#         - Adherence to standard medical documentation formats.
+
+#         **Formatting Instructions:**
+#         - **The report title should be bold and centered.**
+#         - **All report section headers (Chief Complaint, HPI, etc.) should be bold.**
+#         - **The main content should be normal text (not bold).**
+#         - **Use professional medical terminology throughout.**
+
+#         {input_text}
+#         """
+
+#         response = client.chat.completions.create(
+#             model="gpt-4",
+#             messages=[{"role": "system", "content": structured_prompt}]
+#         )
+
+#         corrected_text = response.choices[0].message.content.strip()
+#         editor_entry = Editor(result=corrected_text)
+#         editor_entry.save()
+
+#         # Return response
+#         return jsonify({
+#             "corrected_text": corrected_text,
+#             "record_id": str(editor_entry.id)
+#         })
+#         # return jsonify({"corrected_text": corrected_text})
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 # ✅ 2️⃣ Identifies mistakes and suggests corrections (New functionality)
 @app.route('/identify-mistakes', methods=['POST'])

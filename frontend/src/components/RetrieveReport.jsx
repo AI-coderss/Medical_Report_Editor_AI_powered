@@ -5,22 +5,34 @@ import DownloadPDF from "./DownloadPDF";
 import "../styles/RetrieveReport.css";
 
 const RetrieveReport = () => {
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState([]); // For /doctor-report
+  const [editorReports, setEditorReports] = useState([]); // For /editor-report
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(1); // Track the active tab (1 = doctor-report, 2 = editor-report)
 
   const handleShowReport = (report) => {
     setSelectedReport(report);
     setIsModalOpen(true);
   };
 
+  const truncateText = (text, maxLength) => {
+    // Check if the text is longer than the maximum length, if so, truncate it
+    if (text && text.length > maxLength) {
+      return text.slice(0, maxLength) + "..."; // Truncate and add ellipsis
+    }
+    return text; // Return text as is if it's not longer than maxLength
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedReport(null);
   };
+
   useEffect(() => {
     fetchReports();
+    fetchEditorReports(); // Fetch the reports from /editor-report
   }, []);
 
   const fetchReports = async () => {
@@ -37,13 +49,33 @@ const RetrieveReport = () => {
           },
         }
       );
-      console.log("response", response);
-      console.log("response", response.status);
 
       const data = await response.json();
       setReports(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching reports:", error);
+    }
+  };
+
+  const fetchEditorReports = async () => {
+    try {
+      const token = Cookies.get("token");
+
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/editor-report",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      setEditorReports(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching editor reports:", error);
     }
   };
 
@@ -74,7 +106,6 @@ const RetrieveReport = () => {
 
           if (response.ok) {
             setReports(reports.filter((report) => report.id !== reportId));
-
             Swal.fire("Deleted!", "The report has been deleted.", "success");
           } else {
             Swal.fire("Error", "Failed to delete report", "error");
@@ -86,6 +117,7 @@ const RetrieveReport = () => {
       }
     });
   };
+
   const filteredReports = reports.filter(
     (report) =>
       (report.patient_name?.toLowerCase() || "").includes(
@@ -96,128 +128,194 @@ const RetrieveReport = () => {
       )
   );
 
+  const filteredEditorReports = editorReports.filter((report) =>
+    (report.result?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="container-sec">
       <div className="p-4 w-full">
+        {/* Tabs for switching between tables */}
+        <div className="tabs">
+          <button
+            className={`tab ${selectedTab === 1 ? "active" : ""}`}
+            onClick={() => setSelectedTab(1)}
+          >
+            Template Reports
+          </button>
+          <button
+            className={`tab ${selectedTab === 2 ? "active" : ""}`}
+            onClick={() => setSelectedTab(2)}
+          >
+            Editor Reports
+          </button>
+        </div>
+
+        {/* Search Input */}
         <div className="inputdiv">
           <h2 className="text-4xl text-center font-bold text-red-600 mb-4">
             Medical Reports
           </h2>
-
           <input
             type="text"
-            placeholder="Search by Patient Name or Chief Complaint..."
+            placeholder="Search by Patient Name, Chief Complaint or Result..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border user-input p-2 mb-4 w-full rounded"
           />
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-blue-500 text-white table-main">
-                <th className="border p-2">S. No.</th>
-                <th className="border p-2">Patient Name</th>
-                <th className="border p-2">Age</th>
-                <th className="border p-2">Chief Complaint</th>
-                <th className="border p-2">Medical History</th>
-                <th className="border p-2">Medications</th>
-                <th className="border p-2">Allergies</th>
-                <th className="border p-2">Assessment Plan</th>
-                <th className="border p-2">Doctor's Signature</th>
-                <th className="border p-2">Report</th>
-                <th className="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReports.length > 0 ? (
-                filteredReports.map((report, index) => (
-                  <tr key={report.id} className="text-center border">
-                    <td className="border p-2">{index + 1}</td>
-                    <td className="border p-2">{report.patient_name}</td>
-                    <td className="border p-2">{report.age}</td>
-                    <td className="border p-2">{report.chief_complaint}</td>
-                    <td className="border p-2">
-                      {report.past_medical_history}
-                    </td>
-                    <td className="border p-2">{report.medications}</td>
-                    <td className="border p-2">{report.allergies}</td>
-                    <td className="border p-2">{report.assessment_plan}</td>
-                    <td className="border p-2">
-                      {report.doctor_signature ? (
-                        <img
-                          src={`data:image/png;base64,${report.doctor_signature}`}
-                          alt="Doctor Signature"
-                          className="h-12 w-auto"
-                        />
-                      ) : (
-                        "No Signature"
-                      )}
-                    </td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => handleShowReport(report)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
-                      >
-                        Show Report
-                      </button>
-                    </td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => handleDelete(report.id)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
+
+        {/* Display Doctor Reports in Tab 1 */}
+        {selectedTab === 1 && (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-blue-500 text-white table-main">
+                  <th className="border p-2">S. No.</th>
+                  <th className="border p-2">Patient Name</th>
+                  <th className="border p-2">Age</th>
+                  <th className="border p-2">Chief Complaint</th>
+                  <th className="border p-2">Medical History</th>
+                  <th className="border p-2">Medications</th>
+                  <th className="border p-2">Allergies</th>
+                  <th className="border p-2">Assessment Plan</th>
+                  <th className="border p-2">Doctor's Signature</th>
+                  <th className="border p-2">Report</th>
+                  <th className="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredReports.length > 0 ? (
+                  filteredReports.map((report, index) => (
+                    <tr key={report.id} className="text-center border">
+                      <td className="border p-2">{index + 1}</td>
+                      <td className="border p-2">{report.patient_name}</td>
+                      <td className="border p-2">{report.age}</td>
+                      <td className="border p-2">{report.chief_complaint}</td>
+                      <td className="border p-2">
+                        {report.past_medical_history}
+                      </td>
+                      <td className="border p-2">{report.medications}</td>
+                      <td className="border p-2">{report.allergies}</td>
+                      <td className="border p-2">{report.assessment_plan}</td>
+                      <td className="border p-2">
+                        {report.doctor_signature ? (
+                          <img
+                            src={`data:image/png;base64,${report.doctor_signature}`}
+                            alt="Doctor Signature"
+                            className="h-12 w-auto"
+                          />
+                        ) : (
+                          "No Signature"
+                        )}
+                      </td>
+                      <td className="border p-2">
+                        <button
+                          onClick={() => handleShowReport(report)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                        >
+                          Show Report
+                        </button>
+                      </td>
+                      <td className="border p-2">
+                        <button
+                          onClick={() => handleDelete(report.id)}
+                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="11" className="text-center p-4">
+                      No reports found.
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="11" className="text-center p-4">
-                    No reports found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {/* Modal for Compiled Report */}
-          {isModalOpen && selectedReport && (
-            <div className="fixed inset-0 flex justify-center items-center z-50">
-              {/* Modal Background */}
-              <div
-                className="absolute inset-0 bg-gray-200 opacity-75"
-                onClick={closeModal}
-              ></div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-              {/* Modal Content */}
-              <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-50 relative">
-                <div className="flex-sec">
-                  <h2 className="text-xl font-semibold mb-4 text-center">
-                    Medical Report
-                  </h2>
-                  <h3 className="text-xl font-semibold mb-4 text-center">
-                    Report Id:{selectedReport.id}
-                  </h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto p-4 border rounded">
-                  <p className="whitespace-pre-wrap">
-                    {selectedReport.compiled_report}
-                  </p>
-                </div>
-                <div className="mt-4 flex justify-between">
-                  <DownloadPDF report={selectedReport} />
-                  <button
-                    onClick={closeModal}
-                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
-                  >
-                    Close
-                  </button>
-                </div>
+        {/* Display Editor Reports in Tab 2 */}
+        {selectedTab === 2 && (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-blue-500 text-white table-main">
+                  <th className="border p-2">S. No.</th>
+                  <th className="border p-2">Report</th>
+                  <th className="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEditorReports.length > 0 ? (
+                  filteredEditorReports.map((report, index) => (
+                    <tr key={report.id} className="text-center border">
+                      <td className="border p-2">{index + 1}</td>
+                      <td className="border p-2">
+                        {truncateText(report.result, 150)}
+                      </td>
+                      <td className="border p-2">
+                        <button
+                          onClick={() => handleShowReport(report)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                        >
+                          Show Report
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="3" className="text-center p-4">
+                      No editor reports found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Modal for Compiled Report */}
+        {isModalOpen && selectedReport && (
+          <div className="fixed inset-0 flex justify-center items-center z-50">
+            {/* Modal Background */}
+            <div
+              className="absolute inset-0 bg-gray-200 opacity-75"
+              onClick={closeModal}
+            ></div>
+
+            {/* Modal Content */}
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-50 relative">
+              <div className="flex-sec">
+                <h2 className="text-xl font-semibold mb-4 text-center">
+                  Medical Report
+                </h2>
+                <h3 className="text-xl font-semibold mb-4 text-center">
+                  Report Id:{selectedReport.id}
+                </h3>
+              </div>
+              <div className="max-h-96 overflow-y-auto p-4 border rounded">
+                <p className="whitespace-pre-wrap">
+                  {selectedReport.compiled_report || selectedReport.result}
+                </p>
+              </div>
+              <div className="mt-4 flex justify-between">
+                <DownloadPDF report={selectedReport} />
+                <button
+                  onClick={closeModal}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
+                >
+                  Close
+                </button>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
