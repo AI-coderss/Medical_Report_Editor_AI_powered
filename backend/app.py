@@ -584,6 +584,24 @@ def editor_report():
     
     return jsonify(data_list), 200
 
+@app.route('/all-editor-report', methods=['GET'])
+@jwt_required()
+def all_editor_report():
+    reports = Editor.objects()
+    
+    if not reports:
+     return jsonify({"message": "No report found for this doctor"}), 404
+    
+    data_list = []  # Define data_list here
+    
+    for item in reports:
+        data_list.append({
+            "id":str(item.id),
+            "result": item.result,
+        })
+    
+    return jsonify(data_list), 200
+
 
 
 # ✅ 1️⃣ Corrects and improves the report (Original functionality)

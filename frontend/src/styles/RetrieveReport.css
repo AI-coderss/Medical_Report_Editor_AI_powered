@@ -25,6 +25,7 @@ div#root {
   display: flex;
   justify-content: center;
   margin-bottom: 1rem;
+  gap: 20px;
 }
 
 .tab {
@@ -36,7 +37,10 @@ div#root {
   border-radius: 5px;
 }
 
-.tab.active {
-  background-color: #4caf50;
+.tab-btn.active {
+  background-color: #4caf50 !important;
   color: white;
+}
+button.bg-red-500 {
+  background: red;
 }
