@@ -48,7 +48,7 @@ const Login = () => {
       if (formData.email === "admin.samirabbashospital@gmail.com") {
         navigate("/dashboard/users"); // Navigate to the dashboard if the email is admin
       } else {
-        navigate("/editor"); // Otherwise, navigate to the editor
+        navigate("/template"); // Otherwise, navigate to the editor
       }
     } catch (error) {
       setMessage(error.response?.data?.message || "Login failed. Try again.");

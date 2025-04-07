@@ -188,7 +188,7 @@ function ReportEditor() {
 
       // 1️⃣ Correct the text first (updates editor content)
       const correctResponse = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text",
+        "http://127.0.0.1:5000/correct-text",
         {
           method: "POST",
           headers: {

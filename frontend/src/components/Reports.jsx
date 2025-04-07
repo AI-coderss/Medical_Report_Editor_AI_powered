@@ -3,6 +3,8 @@ import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 import DownloadPDF from "./DownloadPDF";
 import Loader from "./Loader";
+import "../styles/RetrieveReport.css";
+import "./tab.js";
 
 const MedicalReports = () => {
   const [reports, setReports] = useState([]); // Doctor reports
@@ -12,6 +14,7 @@ const MedicalReports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("doctor"); // 'doctor' or 'editor'
+  const [selectedDate, setSelectedDate] = useState("");
 
   const handleShowReport = (report) => {
     setSelectedReport(report);
@@ -23,22 +26,72 @@ const MedicalReports = () => {
     setSelectedReport(null); // Reset selected report when modal is closed
   };
 
+  function formatMedicalReport(reportText) {
+    const lines = reportText.split(/\r?\n/);
+    const elements = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+
+      if (line === "") {
+        elements.push(<br key={i} />);
+        continue;
+      }
+
+      // Headings (markdown-like)
+      const headingMatch = line.match(/^\*\*(.+?):?\*\*$/);
+      const isLikelyHeading =
+        /^[A-Z][A-Za-z\s()&]+$/.test(line) &&
+        (!lines[i + 1] || lines[i + 1].trim() === "");
+
+      if (headingMatch) {
+        elements.push(
+          <h2 key={i} className="mt-4 text-lg font-semibold">
+            {headingMatch[1]}
+          </h2>
+        );
+        continue;
+      }
+
+      if (isLikelyHeading) {
+        elements.push(
+          <h2 key={i} className="mt-4 text-lg font-semibold">
+            {line}
+          </h2>
+        );
+        continue;
+      }
+
+      // Convert inline **bold** within paragraphs
+      const parts = line.split(/(\*\*.*?\*\*)/g).map((part, index) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={index}>{part.replace(/\*\*/g, "")}</strong>;
+        }
+        return part;
+      });
+
+      elements.push(
+        <p key={i} className="mb-2">
+          {parts}
+        </p>
+      );
+    }
+
+    return elements;
+  }
   // Fetch doctor reports
   const fetchDoctorReports = async () => {
     try {
       setLoading(true);
       const token = Cookies.get("token");
 
-      const response = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/reports",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch("http://127.0.0.1:5000/reports", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
       setReports(Array.isArray(data) ? data : []);
@@ -115,30 +168,54 @@ const MedicalReports = () => {
   };
 
   const truncateText = (text, maxLength) => {
-    // Check if the text is longer than the maximum length, if so, truncate it
-    if (text && text.length > maxLength) {
-      return text.slice(0, maxLength) + "..."; // Truncate and add ellipsis
+    if (!text) return "";
+
+    // Replace bold-like **Title:** with 'Title:\n'
+    let cleanedText = text.replace(/\*\*(.+?):\*\*/g, "$1:\n");
+
+    // Replace remaining bold-style **text** with just text
+    cleanedText = cleanedText.replace(/\*\*(.*?)\*\*/g, "$1");
+
+    // Replace patterns like "Chief Complaint:" with line breaks before them (optional enhancement)
+    cleanedText = cleanedText.replace(/([A-Za-z ()/&]+:)/g, "\n$1");
+
+    // Normalize spacing
+    cleanedText = cleanedText.replace(/ +/g, " ").trim();
+
+    // Truncate if too long
+    if (cleanedText.length > maxLength) {
+      cleanedText = cleanedText.slice(0, maxLength).trim() + "...";
     }
-    return text; // Return text as is if it's not longer than maxLength
+
+    return cleanedText;
   };
   const filteredReports = (reportsList) =>
-    reportsList.filter(
-      (report) =>
+    reportsList.filter((report) => {
+      const matchesSearch =
         (report.patient_name?.toLowerCase() || "").includes(
           searchQuery.toLowerCase()
         ) ||
         (report.chief_complaint?.toLowerCase() || "").includes(
           searchQuery.toLowerCase()
-        )
-    );
+        );
+
+      const reportDate = new Date(report.date_of_report)
+        .toISOString()
+        .split("T")[0];
+
+      const matchesDate = !selectedDate || reportDate === selectedDate;
+
+      return matchesSearch && matchesDate;
+    });
 
   return (
     <div className="p-4 w-full">
-      <div className="inputdiv">
+      <div className="medi-header">
         <h2 className="text-4xl text-center font-bold text-red-600 mb-4">
           Medical Reports
         </h2>
-
+      </div>
+      <div className="inputdiv">
         <input
           type="text"
           placeholder="Search by Patient Name or Chief Complaint..."
@@ -146,19 +223,36 @@ const MedicalReports = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="border user-input p-2 mb-4 w-full rounded"
         />
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="border user-input p-2 mb-4 w-full rounded"
+        />
+        {selectedDate && (
+          <p className="mb-2 text-sm text-gray-600">
+            Showing reports for: <strong>{selectedDate}</strong>
+            <button
+              className="ml-4 text-red-500 underline"
+              onClick={() => setSelectedDate("")}
+            >
+              Clear
+            </button>
+          </p>
+        )}
       </div>
 
       {/* Tabs Navigation */}
-      <div className="tabs">
+      <div className="tabs TabButtons TabsWrapper">
         <button
           onClick={() => setActiveTab("doctor")}
-          className={`tab-btn ${activeTab === "doctor" ? "active" : ""}`}
+          className={`tab_rep ${activeTab === "doctor" ? "active" : ""}`}
         >
           Doctor Reports
         </button>
         <button
           onClick={() => setActiveTab("editor")}
-          className={`tab-btn ${activeTab === "editor" ? "active" : ""}`}
+          className={`tab_rep ${activeTab === "editor" ? "active" : ""}`}
         >
           Editor Reports
         </button>
@@ -172,17 +266,21 @@ const MedicalReports = () => {
         <div className="overflow-x-auto">
           {/* Tab content based on activeTab */}
           {activeTab === "doctor" && (
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-gray-300 medi-table">
               <thead>
                 <tr className="bg-blue-500 text-white table-main">
                   <th className="border p-2">S. No.</th>
                   <th className="border p-2">Patient Name</th>
+                  <th className="border p-2">Patient File Number</th>
                   <th className="border p-2">Age</th>
                   <th className="border p-2">Chief Complaint</th>
+                  <th className="border p-2">Personal History</th>
                   <th className="border p-2">Medical History</th>
-                  <th className="border p-2">Medications</th>
-                  <th className="border p-2">Allergies</th>
-                  <th className="border p-2">Assessment Plan</th>
+                  <th className="border p-2">Present Illness</th>
+                  <th className="border p-2">Past History</th>
+                  <th className="border p-2">Family History</th>
+                  <th className="border p-2">System Review</th>
+                  <th className="border p-2">Date Of Report</th>
                   <th className="border p-2">Doctor's Signature</th>
                   <th className="border p-2">Report</th>
                   <th className="border p-2">Actions</th>
@@ -197,14 +295,22 @@ const MedicalReports = () => {
                     >
                       <td className="border p-2">{index + 1}</td>
                       <td className="border p-2">{report.patient_name}</td>
+                      <td className="border p-2">{report.id}</td>
                       <td className="border p-2">{report.age}</td>
                       <td className="border p-2">{report.chief_complaint}</td>
+                      <td className="border p-2">{report.personal_history}</td>
+                      <td className="border p-2">{report.medical_history}</td>
+                      <td className="border p-2">{report.present_illness}</td>
+                      <td className="border p-2">{report.past_history}</td>
+                      <td className="border p-2">{report.family_history}</td>
+                      <td className="border p-2">{report.system_review}</td>
                       <td className="border p-2">
-                        {report.past_medical_history}
+                        {
+                          new Date(report.date_of_report)
+                            .toISOString()
+                            .split("T")[0]
+                        }
                       </td>
-                      <td className="border p-2">{report.medications}</td>
-                      <td className="border p-2">{report.allergies}</td>
-                      <td className="border p-2">{report.assessment_plan}</td>
                       <td className="border p-2">
                         {report.doctor_signature ? (
                           <img
@@ -250,7 +356,9 @@ const MedicalReports = () => {
               <thead>
                 <tr className="bg-blue-500 text-white table-main">
                   <th className="border p-2">S. No.</th>
-                  <th className="border p-2">Result</th>
+                  <th className="border p-2">Patient File Number</th>
+                  <th className="border p-2">Date of Report</th>
+                  <th className="border p-2">Report</th>
                   <th className="border p-2">Actions</th>
                 </tr>
               </thead>
@@ -262,6 +370,15 @@ const MedicalReports = () => {
                       className="text-center border"
                     >
                       <td className="border p-2">{index + 1}</td>
+                      <td className="border p-2">{report.id}</td>
+                      <td className="border p-2">
+                        {" "}
+                        {
+                          new Date(report.date_of_report)
+                            .toISOString()
+                            .split("T")[0]
+                        }
+                      </td>
                       <td className="border p-2">
                         {truncateText(report.result, 150)}
                       </td>
@@ -306,9 +423,11 @@ const MedicalReports = () => {
             </div>
             <div className="max-h-96 overflow-y-auto p-4 border rounded">
               <p className="whitespace-pre-wrap">
-                {selectedReport.compiled_report ||
-                  selectedReport.result ||
-                  "No compiled report available"}
+                {formatMedicalReport(
+                  selectedReport.compiled_report ||
+                    selectedReport.result ||
+                    "No compiled report available"
+                )}
               </p>
             </div>
             <div className="mt-4 flex justify-between">

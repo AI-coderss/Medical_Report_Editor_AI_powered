@@ -4,17 +4,18 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import fitz
-from mongoengine import connect, Document, StringField, FileField, ValidationError, ListField
+from mongoengine import connect, Document, StringField, FileField, ValidationError, ListField ,DateTimeField
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
 import re
 import bcrypt
 from pymongo import MongoClient
 from bson import ObjectId 
-import datetime
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
 import base64
-
+from werkzeug.utils import secure_filename
+import os
+from datetime import datetime ,timedelta
 # Load environment variables from .env file
 load_dotenv()
 
@@ -49,7 +50,7 @@ if not OPENAI_API_KEY:
 
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=24)  
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 jwt = JWTManager(app)
 
 # Directory to store uploaded files (e.g., doctor's signature)
@@ -76,21 +77,18 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 # Medical Report Model
 class MedicalReport(Document):
-    patient_name = StringField( max_length=100)
+    patient_name = StringField(max_length=100)
     age = StringField(max_length=10)
+    personal_history = StringField()
     chief_complaint = StringField()
-    history_of_present_illness = StringField()
-    past_medical_history = StringField()
+    present_illness = StringField()
+    medical_history = StringField()
+    past_history = StringField()
     family_history = StringField()
-    medications = StringField()
-    allergies = StringField()
-    review_of_systems = StringField()
-    physical_examination = StringField()
-    investigations = StringField()
-    assessment_plan = StringField()
+    system_review = StringField()
+    compiled_report = StringField()
     doctor_signature = FileField()
-    result = StringField()
-    compiled_report=StringField()
+    date_of_report = DateTimeField(default=datetime.utcnow)
     doctor_id = StringField(required=True)
 # class Editor(Document):
 #     text = StringField(required=True)
@@ -100,6 +98,7 @@ class MedicalReport(Document):
 #     meta = {'collection': 'corrected_reports'}
 class Editor(Document):
     result = StringField(required=True)
+    date_of_report = DateTimeField(default=datetime.utcnow)
     doctor_id = StringField(required=True)    
     meta = {'collection': 'corrected_reports'}
 
@@ -441,32 +440,36 @@ def get_reports():
     try:
         reports = MedicalReport.objects()
         report_list = []
+
         for report in reports:
-            # Get base64-encoded image data if signature exists
             signature_data = None
             if report.doctor_signature:
                 signature_data = base64.b64encode(report.doctor_signature.read()).decode('utf-8')
+
             report_dict = {
                 "id": str(report.id),
                 "patient_name": report.patient_name,
                 "age": report.age,
+                "personal_history": report.personal_history,
                 "chief_complaint": report.chief_complaint,
-                "history_of_present_illness": report.history_of_present_illness,
-                "past_medical_history": report.past_medical_history,
+                "present_illness": report.present_illness,
+                "medical_history": report.medical_history,
+                "past_history": report.past_history,
                 "family_history": report.family_history,
-                "medications": report.medications,
-                "allergies": report.allergies,
-                "review_of_systems": report.review_of_systems,
-                "physical_examination": report.physical_examination,
-                "investigations": report.investigations,
-                "assessment_plan": report.assessment_plan,
+                "system_review": report.system_review,
+                "compiled_report": report.compiled_report,
                 "doctor_signature": signature_data,
-                "compiled_report":report.compiled_report  
+                "date_of_report": report.date_of_report.isoformat() if report.date_of_report else None,
+                "doctor_id": report.doctor_id
             }
+
             report_list.append(report_dict)
+
         return jsonify(report_list), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
     #Get specific Medical Report
 @app.route('/report/<id>', methods=['GET'])
 @jwt_required()
@@ -552,7 +555,7 @@ def correct_text():
 
         corrected_text = response.choices[0].message.content.strip()
         doctor_id = get_jwt_identity()
-        editor_entry = Editor(result=corrected_text,doctor_id=doctor_id)
+        editor_entry = Editor(result=corrected_text,doctor_id=doctor_id,date_of_report=datetime.utcnow())
         editor_entry.save()
 
         # Return response
@@ -580,6 +583,7 @@ def editor_report():
         data_list.append({
             "id":str(item.id),
             "result": item.result,
+            "date_of_report": item.date_of_report,
         })
     
     return jsonify(data_list), 200
@@ -598,6 +602,7 @@ def all_editor_report():
         data_list.append({
             "id":str(item.id),
             "result": item.result,
+            "date_of_report": item.date_of_report
         })
     
     return jsonify(data_list), 200
@@ -683,60 +688,46 @@ def identify_mistakes():
 @jwt_required()
 def create_medical_report():
     try:
-        
-        # Extract form fields from request.form (not request.json)
+        # Extract form fields
         patient_name = request.form.get("patientName")
         age = request.form.get("age")
+        personal_history = request.form.get("personalHistory")
         chief_complaint = request.form.get("chiefComplaint")
-        history_of_present_illness = request.form.get("historyOfPresentIllness")
-        past_medical_history = request.form.get("pastMedicalHistory")
+        present_illness = request.form.get("presentIllness")
+        medical_history = request.form.get("medicalHistory")
+        past_history = request.form.get("pastHistory")
         family_history = request.form.get("familyHistory")
-        medications = request.form.get("medications")
-        allergies = request.form.get("allergies")
-        review_of_systems = request.form.get("reviewOfSystems")
-        physical_examination = request.form.get("physicalExamination")
-        investigations = request.form.get("investigations")
-        assessment_plan = request.form.get("assessmentPlan")
+        system_review = request.form.get("systemReview")
         doctor_id = get_jwt_identity()
-        print(doctor_id, "fhghghfghfhgghgh")
 
-# Generate AI medical report
+        # Generate AI medical report
         structured_prompt = f"""
-            You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
+        You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
 
-            **Patient Information:**
-            - Name: {patient_name}
-            - Age: {age}
+        **Patient Information:**
+        - Name: {patient_name}
+        - Age: {age}
 
-            **Chief Complaint:**
-            {chief_complaint}
+        **Chief Complaint:**
+        {chief_complaint}
 
-            **History of Present Illness:**
-            {history_of_present_illness}
+        **History of Present Illness:**
+        {present_illness}
 
-            **Past Medical History:**
-            {past_medical_history}
+        **Medical History:**
+        {medical_history}
 
-            **Family History:**
-            {family_history}
+        **Past History:**
+        {past_history}
 
-            **Medications:**
-            {medications}
+        **Personal History:**
+        {personal_history}
 
-            **Allergies:**
-            {allergies}
+        **Family History:**
+        {family_history}
 
-            **Review of Systems:**
-            {review_of_systems}
-
-            **Physical Examination:**
-            {physical_examination}
-
-            **Investigations:**
-            {investigations}
-
-            **Assessment & Plan:**
-            {assessment_plan}
+        **System Review:**
+        {system_review}
         """
 
         response = client.chat.completions.create(
@@ -746,7 +737,7 @@ def create_medical_report():
 
         compiled_report = response.choices[0].message.content.strip()
 
-        # Handle signature file upload
+        # Handle doctor signature upload
         if "doctorSignature" not in request.files:
             return jsonify({"error": "No doctor signature file provided"}), 400
 
@@ -757,36 +748,32 @@ def create_medical_report():
         if not allowed_file(file.filename):
             return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
 
-        # Secure the filename and save it
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(file_path)
 
-        # Save report in MongoDB
+        # Create and save report in MongoDB
         report = MedicalReport(
             patient_name=patient_name,
             age=age,
+            personal_history=personal_history,
             chief_complaint=chief_complaint,
-            history_of_present_illness=history_of_present_illness,
-            past_medical_history=past_medical_history,
+            present_illness=present_illness,
+            medical_history=medical_history,
+            past_history=past_history,
             family_history=family_history,
-            medications=medications,
-            allergies=allergies,
-            review_of_systems=review_of_systems,
-            physical_examination=physical_examination,
-            investigations=investigations,
-            assessment_plan=assessment_plan,
-            doctor_id = doctor_id,
+            system_review=system_review,
             compiled_report=compiled_report,
-            
+            doctor_id=doctor_id,
         )
-        # Store signature file in MongoDB GridFS
+
+        # Store the signature file in GridFS
         with open(file_path, "rb") as f:
             report.doctor_signature.put(f, content_type=file.content_type)
 
         report.save()
 
-        # Optionally, remove the file from the local server
+        # Remove file from local disk
         os.remove(file_path)
 
         return jsonify({
@@ -794,7 +781,6 @@ def create_medical_report():
             "report_id": str(report.id),
             "doctor_id": doctor_id
         }), 201
-
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -818,16 +804,15 @@ def doctor_report():
             "id": str(report.id),
             "patient_name": report.patient_name,
             "age": report.age,
+            "personal_history": report.personal_history,
             "chief_complaint": report.chief_complaint,
-            "history_of_present_illness": report.history_of_present_illness,
-            "past_medical_history": report.past_medical_history,
+            "present_illness": report.present_illness,
+            "medical_history": report.medical_history,
+            "past_history": report.past_history,
             "family_history": report.family_history,
-            "medications": report.medications,
-            "allergies": report.allergies,
-            "review_of_systems": report.review_of_systems,
-            "physical_examination": report.physical_examination,
-            "investigations": report.investigations,
-            "assessment_plan": report.assessment_plan,
+            "system_review": report.system_review,
+            "date_of_report": report.date_of_report,
+            "doctor_id": report.doctor_id,
             "compiled_report": report.compiled_report,
             "doctor_signature": signature_base64,  # Include the base64-encoded signature
         })

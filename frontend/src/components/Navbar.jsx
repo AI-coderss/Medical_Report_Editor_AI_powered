@@ -1,131 +1,80 @@
 // src/components/Navbar.js
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Howl } from "howler"; // Import Howler.js
-import Cookies from "js-cookie"; // Import js-cookie
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import "../styles/Navbar.css";
 
 const Navbar = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState("templates");
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate(); // For redirection
+  const navigate = useNavigate();
 
-  // Navigation sound effect
-  const navSound = new Howl({
-    src: ["/nav.wav"], // Path to the sound file
-    volume: 0.05, // Set volume
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    handleResize(); // Initial check
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const handleNavigation = (index) => {
-    setActiveIndex(index);
+  const handleTabClick = (tabId, path) => {
+    setActiveTab(tabId);
     setMenuOpen(false);
-    navSound.play();
-  };
-
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
+    navigate(path);
   };
 
   const handleLogout = () => {
-    Cookies.remove("token"); // Remove the authentication token from cookies
-    navigate("/login"); // Redirect to the login page
+    Cookies.remove("token");
+    navigate("/login");
   };
 
-  const menuItems = [
-    { label: "Editor ✍️", path: "/editor" },
-    { label: "Templates 📋", path: "/template" },
-    { label: "Upload Report 📤", path: "/upload-report" },
-    { label: "Retrieve Report 📄", path: "/retrieve-report" }, // New tab added
-    { label: "Settings ⚙️", path: "/settings" },
-  ];
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) setMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className="nav">
-      <div className="navLogo">
-        <img
-          src="/logo.png"
-          alt="Medical Report Editor Logo"
-          height="50px"
-          width="auto"
-        />
-      </div>
-      {isMobile ? (
-        <div className="burgerMenu">
-          <div className="burgerIcon" onClick={toggleMenu}>
-            <div className="bar" />
-            <div className="bar" />
-            <div className="bar" />
-          </div>
-          {menuOpen && (
-            <div className="dropdownMenu">
-              {menuItems.map((item, index) => (
-                <Link
-                  to={item.path}
-                  key={index}
-                  className={`mobileNavItem ${
-                    activeIndex === index ? "active" : ""
-                  }`}
-                  onClick={() => handleNavigation(index)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <button className="logout-btn mobile" onClick={handleLogout}>
-                Logout 🚪
-              </button>
-            </div>
-          )}
+      <div className="navbar">
+        <div className="logo">
+          <img src="logo.png" alt="logo" />
         </div>
-      ) : (
-        <div className="navItemContainer">
-          {menuItems.map((item, index) => (
-            <Link
-              to={item.path}
-              key={index}
-              className={`navItem ${activeIndex === index ? "active" : ""}`}
-              onClick={() => handleNavigation(index)}
-            >
-              {item.label}
-            </Link>
-          ))}
+
+        <div className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+          ☰
+        </div>
+
+        <div className={`tabs menu ${menuOpen ? "show" : ""}`} id="menu">
           <div
-            className="navItemActiveContainer"
-            style={{ transform: `translateX(${activeIndex * 160}px)` }}
+            className={`tab ${activeTab === "templates" ? "active" : ""}`}
+            onClick={() => handleTabClick("templates", "/template")}
           >
-            <div className="navItemActive">
-              <div className="navItemActiveLeft"></div>
-              <div className="navItemActiveCenter"></div>
-              <div className="navItemActiveRight"></div>
-            </div>
-            <div className="navItemActive">
-              <div className="navItemActiveCopyLeft"></div>
-              <div className="navItemActiveCopyCenter"></div>
-              <div className="navItemActiveCopyRight"></div>
-            </div>
+            <i>📋</i>Templates
+          </div>
+          <div
+            className={`tab ${activeTab === "editor" ? "active" : ""}`}
+            onClick={() => handleTabClick("editor", "/editor")}
+          >
+            <i> ✍️</i>Editor
+          </div>
+          <div
+            className={`tab ${activeTab === "upload" ? "active" : ""}`}
+            onClick={() => handleTabClick("upload", "/upload-report")}
+          >
+            <i>📤</i>Upload Report
+          </div>
+          <div
+            className={`tab ${activeTab === "retrieve" ? "active" : ""}`}
+            onClick={() => handleTabClick("retrieve", "/retrieve-report")}
+          >
+            <i>📄</i>Retrieve Report
+          </div>
+          <div
+            className={`tab ${activeTab === "settings" ? "active" : ""}`}
+            onClick={() => handleTabClick("settings", "/settings")}
+          >
+            <i>⚙️</i>Settings
           </div>
         </div>
-      )}
-      {!isMobile && (
-        <div>
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout 🚪
-          </button>
+        <div className="logout" onClick={handleLogout}>
+          <i>📜</i>Logout
         </div>
-      )}
+      </div>
     </div>
   );
 };

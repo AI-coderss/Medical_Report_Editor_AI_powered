@@ -9,16 +9,13 @@ function ReportTemplate() {
     patientName: "",
     age: "",
     chiefComplaint: "",
-    historyOfPresentIllness: "",
-    pastMedicalHistory: "",
+    personalHistory: "",
+    presentIllness: "",
+    medicalHistory: "",
+    pastHistory: "",
     familyHistory: "",
-    medications: "",
-    allergies: "",
-    reviewOfSystems: "",
-    physicalExamination: "",
-    investigations: "",
-    assessmentPlan: "",
-    doctorSignature: "", // Will store Base64 signature
+    systemReview: "",
+    doctorSignature: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -104,16 +101,13 @@ function ReportTemplate() {
       const token = Cookies.get("token");
 
       // Request to the second API
-      const apiTwoRequest = fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report",
-        {
-          method: "POST",
-          body: formDataToSend,
-          headers: {
-            Authorization: `Bearer ${token}`, // Add JWT token in headers
-          },
-        }
-      );
+      const apiTwoRequest = fetch("http://127.0.0.1:5000/compile-report", {
+        method: "POST",
+        body: formDataToSend,
+        headers: {
+          Authorization: `Bearer ${token}`, // Add JWT token in headers
+        },
+      });
 
       // Wait for both API requests to finish
       const [apiTwoResponse] = await Promise.all([apiTwoRequest]);
@@ -149,15 +143,12 @@ function ReportTemplate() {
       patientName: "",
       age: "",
       chiefComplaint: "",
-      historyOfPresentIllness: "",
-      pastMedicalHistory: "",
+      personalHistory: "",
+      presentIllness: "",
+      medicalHistory: "",
+      pastHistory: "",
       familyHistory: "",
-      medications: "",
-      allergies: "",
-      reviewOfSystems: "",
-      physicalExamination: "",
-      investigations: "",
-      assessmentPlan: "",
+      systemReview: "",
       doctorSignature: "",
     });
     setCompiledReport("");
@@ -199,9 +190,6 @@ function ReportTemplate() {
               value={formData.age}
               onChange={handleChange}
             />
-            {errors.age && (
-              <span className="text-red-500 error-message">{errors.age}</span>
-            )}
 
             <label>Chief Complaint:</label>
             <textarea
@@ -210,17 +198,24 @@ function ReportTemplate() {
               onChange={handleChange}
             />
 
-            <label>History of Present Illness:</label>
+            <label>Present Illness:</label>
             <textarea
-              name="historyOfPresentIllness"
-              value={formData.historyOfPresentIllness}
+              name="presentIllness"
+              value={formData.presentIllness}
               onChange={handleChange}
             />
 
-            <label>Past Medical History:</label>
+            <label>Medical History:</label>
             <textarea
-              name="pastMedicalHistory"
-              value={formData.pastMedicalHistory}
+              name="medicalHistory"
+              value={formData.medicalHistory}
+              onChange={handleChange}
+            />
+
+            <label>Past History:</label>
+            <textarea
+              name="pastHistory"
+              value={formData.pastHistory}
               onChange={handleChange}
             />
 
@@ -231,45 +226,17 @@ function ReportTemplate() {
               onChange={handleChange}
             />
 
-            <label>Medications:</label>
+            <label>Personal History:</label>
             <textarea
-              name="medications"
-              value={formData.medications}
+              name="personalHistory"
+              value={formData.personalHistory}
               onChange={handleChange}
             />
 
-            <label>Allergies:</label>
+            <label>System Review:</label>
             <textarea
-              name="allergies"
-              value={formData.allergies}
-              onChange={handleChange}
-            />
-
-            <label>Review of Systems:</label>
-            <textarea
-              name="reviewOfSystems"
-              value={formData.reviewOfSystems}
-              onChange={handleChange}
-            />
-
-            <label>Physical Examination:</label>
-            <textarea
-              name="physicalExamination"
-              value={formData.physicalExamination}
-              onChange={handleChange}
-            />
-
-            <label>Investigations:</label>
-            <textarea
-              name="investigations"
-              value={formData.investigations}
-              onChange={handleChange}
-            />
-
-            <label>Assessment & Plan:</label>
-            <textarea
-              name="assessmentPlan"
-              value={formData.assessmentPlan}
+              name="systemReview"
+              value={formData.systemReview}
               onChange={handleChange}
             />
 
