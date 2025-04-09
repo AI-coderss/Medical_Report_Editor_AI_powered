@@ -101,13 +101,16 @@ function ReportTemplate() {
       const token = Cookies.get("token");
 
       // Request to the second API
-      const apiTwoRequest = fetch("http://127.0.0.1:5000/compile-report", {
-        method: "POST",
-        body: formDataToSend,
-        headers: {
-          Authorization: `Bearer ${token}`, // Add JWT token in headers
-        },
-      });
+      const apiTwoRequest = fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report",
+        {
+          method: "POST",
+          body: formDataToSend,
+          headers: {
+            Authorization: `Bearer ${token}`, // Add JWT token in headers
+          },
+        }
+      );
 
       // Wait for both API requests to finish
       const [apiTwoResponse] = await Promise.all([apiTwoRequest]);

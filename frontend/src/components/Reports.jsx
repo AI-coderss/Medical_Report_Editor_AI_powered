@@ -85,13 +85,16 @@ const MedicalReports = () => {
       setLoading(true);
       const token = Cookies.get("token");
 
-      const response = await fetch("http://127.0.0.1:5000/reports", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/reports",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await response.json();
       setReports(Array.isArray(data) ? data : []);
@@ -107,13 +110,16 @@ const MedicalReports = () => {
     try {
       const token = Cookies.get("token");
 
-      const response = await fetch("http://127.0.0.1:5000/all-editor-report", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/all-editor-report",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await response.json();
       setEditorReports(Array.isArray(data) ? data : []);
