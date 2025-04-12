@@ -1,13 +1,21 @@
 /* Center Loader in the Middle of the Canvas */
 .loader-container {
   position: absolute;
-  bottom: 0; /* ✅ Fixed position */
-  transform: translate(-50%, -50%); /* ✅ Perfect centering */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Perfect centering */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 100; /* ✅ Ensures it's above other elements */
+  z-index: 100; /* Ensures it's above other elements */
+}
+
+/* Loader wrapper */
+.loader {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 /* Animated Text */
@@ -16,7 +24,6 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin-left: 55%;
 }
 
 /* Loader Animation Letters */
@@ -32,7 +39,7 @@
   animation-iteration-count: infinite;
 }
 
-/* Ensure Animation Moves Smoothly */
+/* Bouncing Animation */
 @keyframes bounce-animation {
   0% {
     transform: translateY(0px);
@@ -46,7 +53,7 @@
   }
 }
 
-/* Delay Each Letter Animation for a Cool Effect */
+/* Staggered Bounce Delay */
 .animated-text__letter:nth-child(2) {
   animation-delay: 0.1s;
 }
@@ -90,37 +97,34 @@
   animation-delay: 1.4s;
 }
 
-/* Responsive Styles for Different Screen Sizes */
+/* Responsive Styles */
 @media (max-width: 768px) {
-  .loading {
-    height: 50%;
-    width: 50%;
+  .animated-text__letter {
+    font-size: 1rem;
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 500px) {
   .animated-text__letter {
-    font-size: 15px;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
   }
 }
 
 @media (max-width: 340px) {
   .animated-text__letter {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
 }
 
-.loader {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
+/* Other Global Styles */
 .flex-sec {
   display: flex;
   justify-content: space-between;
   padding: 10px;
   flex-wrap: wrap;
 }
+
 td {
   width: 35px;
 }

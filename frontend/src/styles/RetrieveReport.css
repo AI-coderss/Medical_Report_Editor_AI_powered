@@ -129,3 +129,13 @@ button.bg-red-500 {
   display: flex;
   gap: 20px;
 }
+.flex-sec {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  flex-wrap: wrap;
+  background-color: #0080ff;
+  color: #fff;
+  border-radius: 3px;
+  margin-bottom: 25px;
+}

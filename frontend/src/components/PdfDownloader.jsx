@@ -1,144 +1,111 @@
-import React, { useState, useEffect } from "react";
-import {
-  PDFDownloadLink,
-  Document,
-  Page,
-  Text,
-  View,
-  Image,
-  StyleSheet,
-} from "@react-pdf/renderer";
-import { FaDownload } from "react-icons/fa";
-import Cookies from "js-cookie"; // Install via npm install js-cookie
+import React, { useState } from "react";
+import { jsPDF } from "jspdf";
 
-const styles = StyleSheet.create({
-  page: {
-    padding: 25,
-    fontSize: 12,
-    lineHeight: 1.4,
-  },
-  header: {
-    fontSize: 14,
-    marginBottom: 7,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  bold: {
-    fontWeight: "bold",
-  },
-  section: {
-    marginBottom: 8,
-  },
-  listItem: {
-    marginLeft: 15,
-    marginBottom: 5,
-  },
-  footer: {
-    marginTop: 20,
-    textAlign: "center",
-    fontSize: 10,
-    color: "#666",
-  },
-  doctorSection: {
-    marginTop: 20,
-    textAlign: "left",
-  },
-  signature: {
-    width: 200,
-    height: 100,
-    alignSelf: "left",
-  },
-});
+const PDFDownloader = ({ content, fileName }) => {
+  const [loading, setLoading] = useState(false);
 
-// Helper function to extract doctor details from cookies
-const getDoctorDetails = () => {
-  return {
-    firstname: Cookies.get("FirstName") || "",
-    lastname: Cookies.get("LastName") || "",
-    department: Cookies.get("department") || "General Medicine",
+  const handleDownloadPDF = async () => {
+    setLoading(true); // Start loading
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const headerHeight = 40;
+    const footerHeight = 40;
+    const contentWidth = pageWidth - margin * 2;
+    const lineHeight = 7;
+
+    const headerImg = "/head.png";
+    const footerImg = "/foot.png";
+
+    let y = headerHeight + 10;
+
+    const addHeaderAndFooter = () => {
+      doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
+      doc.addImage(
+        footerImg,
+        "PNG",
+        0,
+        pageHeight - footerHeight,
+        pageWidth,
+        footerHeight
+      );
+    };
+
+    addHeaderAndFooter();
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+
+    const lines = content.split("\n");
+
+    for (const line of lines) {
+      if (y + lineHeight > pageHeight - footerHeight) {
+        doc.addPage();
+        addHeaderAndFooter();
+        y = headerHeight + 10;
+      }
+
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        y += lineHeight;
+        continue;
+      }
+
+      // Bold detection
+      const boldMatch = /^\*\*(.*?)\*\*$/.exec(trimmed);
+      if (boldMatch) {
+        doc.setFont("helvetica", "bold");
+        const text = boldMatch[1];
+        const split = doc.splitTextToSize(text, contentWidth);
+        split.forEach((l) => {
+          doc.text(l, margin, y);
+          y += lineHeight;
+        });
+        doc.setFont("helvetica", "normal");
+        continue;
+      }
+
+      // Bullet points
+      let text = trimmed;
+      let prefix = "";
+      if (text.startsWith("- ")) {
+        prefix = "• ";
+        text = text.slice(2);
+      }
+
+      const splitLines = doc.splitTextToSize(prefix + text, contentWidth);
+      for (const l of splitLines) {
+        if (y + lineHeight > pageHeight - footerHeight) {
+          doc.addPage();
+          addHeaderAndFooter();
+          y = headerHeight + 10;
+        }
+        doc.text(l, margin, y);
+        y += lineHeight;
+      }
+    }
+
+    // Simulate delay (optional)
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    doc.save(fileName || "report.pdf");
+    setLoading(false); // Done loading
   };
-};
-
-// Helper function to parse and render content
-const renderMarkdown = (line) => {
-  const regex = /(\*\*.*?\*\*)|([^*]+)/g;
-  const parts = line.match(regex) || [];
-  return parts.map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <Text key={index} style={styles.bold}>
-          {part.slice(2, -2)}
-        </Text>
-      );
-    }
-    return <Text key={index}>{part}</Text>;
-  });
-};
-
-const renderContent = (text) => {
-  const lines = text.split("\n");
-  return lines.map((line, index) => {
-    if (line.startsWith("- ")) {
-      return (
-        <Text key={index} style={styles.listItem}>
-          • {renderMarkdown(line.slice(2))}
-        </Text>
-      );
-    }
-    return (
-      <Text key={index} style={styles.section}>
-        {renderMarkdown(line)}
-      </Text>
-    );
-  });
-};
-
-const PDFDownloader = ({ content, fileName, signature }) => {
-  const [doctor, setDoctor] = useState(getDoctorDetails());
-
-  useEffect(() => {
-    setDoctor(getDoctorDetails());
-  }, []);
 
   return (
-    <PDFDownloadLink
-      className="pdf-download-link"
-      document={
-        <Document>
-          <Page style={styles.page}>
-            <Text style={styles.header}></Text>
-            <View>{renderContent(content)}</View>
-
-            {/* Doctor Details */}
-            <View style={styles.doctorSection}>
-              <Text style={styles.bold}>
-                Doctor Name: {doctor.firstname} {doctor.lastname}
-              </Text>
-              <Text style={styles.bold}>Department: {doctor.department}</Text>
-
-              {/* Signature Image */}
-              <Text style={styles.bold}>Signature:</Text>
-              {signature && <Image style={styles.signature} src={signature} />}
-            </View>
-
-            <Text style={styles.footer}>
-              Generated on {new Date().toLocaleDateString()}.
-            </Text>
-          </Page>
-        </Document>
-      }
-      fileName={fileName}
-      style={{
-        textDecoration: "none",
-        color: "#007bff",
-        fontSize: "0.9rem",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-      }}
+    <button
+      onClick={handleDownloadPDF}
+      className={`px-4 py-2 rounded text-white ${
+        loading
+          ? "bg-gray-500 cursor-not-allowed"
+          : "bg-blue-600 hover:bg-blue-800"
+      }`}
+      disabled={loading}
     >
-      <FaDownload /> Download PDF
-    </PDFDownloadLink>
+      {loading ? "Generating PDF..." : "Download PDF"}
+    </button>
   );
 };
 

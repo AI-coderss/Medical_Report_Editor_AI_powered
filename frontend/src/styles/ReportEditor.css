@@ -158,11 +158,35 @@
   font-weight: bold;
   cursor: pointer;
 }
+.patient-info {
+  display: flex;
+  gap: 1rem;
+  padding: 168px;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+}
 
+.patient-info label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  font-size: 14px;
+}
 
-
-  
-  
-  
-  
-  
+.patient-info input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.space-top {
+  width: 50%;
+  padding: 40px 40px;
+}
+.report {
+  margin: 8px 0;
+}
+.public-DraftStyleDefault-block.public-DraftStyleDefault-ltr {
+  padding: 0px 15px;
+  height: 338px;
+  overflow-y: scroll;
+}

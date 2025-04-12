@@ -43,13 +43,17 @@ const Loader = ({ isLoading }) => {
         background: "none",
       }
     : {
-        width: "40%",
-        height: "40%",
         background: "none",
+        margin: " 0px auto 0px 78px",
+        outline: "none",
+        overflow: "hidden",
+        width: "30%",
+        height: "30%",
         position: "absolute",
         transform: "translate(-50%, -50%)",
-        bottom: "0",
-        top: "550px",
+        bottom: "0px",
+        left: "44%",
+        top: "229px",
       };
 
   return (

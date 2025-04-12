@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 import DownloadPDF from "./DownloadPDF";
@@ -6,13 +6,13 @@ import "../styles/RetrieveReport.css";
 import "./tab.js";
 
 const RetrieveReport = () => {
-  const [reports, setReports] = useState([]); // For /doctor-report
-  const [editorReports, setEditorReports] = useState([]); // For /editor-report
+  const [reports, setReports] = useState([]);
+  const [editorReports, setEditorReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState(1); // Track the active tab (1 = doctor-report, 2 = editor-report)
   const [selectedDate, setSelectedDate] = useState("");
+
   const handleShowReport = (report) => {
     setSelectedReport(report);
     setIsModalOpen(true);
@@ -30,7 +30,6 @@ const RetrieveReport = () => {
         continue;
       }
 
-      // Headings (markdown-like)
       const headingMatch = line.match(/^\*\*(.+?):?\*\*$/);
       const isLikelyHeading =
         /^[A-Z][A-Za-z\s()&]+$/.test(line) &&
@@ -54,7 +53,6 @@ const RetrieveReport = () => {
         continue;
       }
 
-      // Convert inline **bold** within paragraphs
       const parts = line.split(/(\*\*.*?\*\*)/g).map((part, index) => {
         if (part.startsWith("**") && part.endsWith("**")) {
           return <strong key={index}>{part.replace(/\*\*/g, "")}</strong>;
@@ -75,19 +73,11 @@ const RetrieveReport = () => {
   const truncateText = (text, maxLength) => {
     if (!text) return "";
 
-    // Replace bold-like **Title:** with 'Title:\n'
     let cleanedText = text.replace(/\*\*(.+?):\*\*/g, "$1:\n");
-
-    // Replace remaining bold-style **text** with just text
     cleanedText = cleanedText.replace(/\*\*(.*?)\*\*/g, "$1");
-
-    // Replace patterns like "Chief Complaint:" with line breaks before them (optional enhancement)
     cleanedText = cleanedText.replace(/([A-Za-z ()/&]+:)/g, "\n$1");
-
-    // Normalize spacing
     cleanedText = cleanedText.replace(/ +/g, " ").trim();
 
-    // Truncate if too long
     if (cleanedText.length > maxLength) {
       cleanedText = cleanedText.slice(0, maxLength).trim() + "...";
     }
@@ -102,7 +92,7 @@ const RetrieveReport = () => {
 
   useEffect(() => {
     fetchReports();
-    fetchEditorReports(); // Fetch the reports from /editor-report
+    fetchEditorReports();
   }, []);
 
   const fetchReports = async () => {
@@ -132,7 +122,7 @@ const RetrieveReport = () => {
       const token = Cookies.get("token");
 
       const response = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/editor-report",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/all-editor-report",
         {
           method: "GET",
           headers: {
@@ -149,7 +139,7 @@ const RetrieveReport = () => {
     }
   };
 
-  const handleDelete = async (reportId) => {
+  const handleDelete = async (reportId, isEditorReport) => {
     const token = Cookies.get("token");
 
     Swal.fire({
@@ -163,19 +153,26 @@ const RetrieveReport = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch(
-            `https://medical-report-editor-ai-powered-backend.onrender.com/report-delete/${reportId}`,
-            {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+          const url = isEditorReport
+            ? `https://medical-report-editor-ai-powered-backend.onrender.com/editor-report-delete/${reportId}`
+            : `https://medical-report-editor-ai-powered-backend.onrender.com/report-delete/${reportId}`;
+
+          console.log("Deleting from:", url);
+
+          const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
           if (response.ok) {
-            setReports(reports.filter((report) => report.id !== reportId));
+            if (isEditorReport) {
+              setEditorReports(editorReports.filter((r) => r.id !== reportId));
+            } else {
+              setReports(reports.filter((r) => r.id !== reportId));
+            }
             Swal.fire("Deleted!", "The report has been deleted.", "success");
           } else {
             Swal.fire("Error", "Failed to delete report", "error");
@@ -187,52 +184,64 @@ const RetrieveReport = () => {
       }
     });
   };
-  const handleTabChange = (e) => {
-    setSelectedTab(e.target.value);
-  };
-  const filteredReports = reports.filter((report) => {
-    const matchesSearch =
-      (report.patient_name?.toLowerCase() || "").includes(
-        searchQuery.toLowerCase()
-      ) ||
-      (report.chief_complaint?.toLowerCase() || "").includes(
-        searchQuery.toLowerCase()
-      );
 
-    const matchesDate =
-      !selectedDate ||
-      new Date(report.date_of_report).toISOString().split("T")[0] ===
-        selectedDate;
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesSearch =
+        (report.patient_name?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        ) ||
+        (report.chief_complaint?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        ) ||
+        (report.fileName?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        ) ||
+        (report.fileNumber?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        );
 
-    return matchesSearch && matchesDate;
-  });
+      const matchesDate =
+        !selectedDate ||
+        new Date(report.date_of_report).toISOString().split("T")[0] ===
+          selectedDate;
 
-  const filteredEditorReports = editorReports.filter((report) => {
-    const matchesSearch = (report.result?.toLowerCase() || "").includes(
-      searchQuery.toLowerCase()
-    );
+      return matchesSearch && matchesDate;
+    });
+  }, [reports, searchQuery, selectedDate]);
 
-    const matchesDate =
-      !selectedDate ||
-      new Date(report.date_of_report).toISOString().split("T")[0] ===
-        selectedDate;
+  const filteredEditorReports = useMemo(() => {
+    return editorReports.filter((report) => {
+      const matchesSearch =
+        (report.result?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        ) ||
+        (report.fileName?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        ) ||
+        (report.fileNumber?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        );
 
-    return matchesSearch && matchesDate;
-  });
+      const matchesDate =
+        !selectedDate ||
+        new Date(report.date_of_report).toISOString().split("T")[0] ===
+          selectedDate;
+
+      return matchesSearch && matchesDate;
+    });
+  }, [editorReports, searchQuery, selectedDate]);
 
   return (
     <div className="container-sec">
       <div className="p-4 w-full">
-        {/* Tabs for switching between tables */}
-
-        {/* Search Input */}
         <h2 className="text-4xl text-center font-bold text-red-600 mb-4 py-5 med-header">
           Medical Reports
         </h2>
         <div className="inputdiv">
           <input
             type="text"
-            placeholder="Search by Patient Name, Chief Complaint or Result..."
+            placeholder="Search by File Number"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border user-input p-2 mb-4 w-full rounded"
@@ -255,58 +264,31 @@ const RetrieveReport = () => {
             </p>
           )}
         </div>
-        <div className="TabButtons TabsWrapper">
-          <button
-            className={`tab_rep ${selectedTab === 1 ? "active" : ""}`}
-            onClick={() => setSelectedTab(1)}
-          >
-            Template Reports
-          </button>
-          <button
-            className={`tab_rep ${selectedTab === 2 ? "active" : ""}`}
-            onClick={() => setSelectedTab(2)}
-          >
-            Editor Reports
-          </button>
-        </div>
-        {/* Display Doctor Reports in Tab 1 */}
-        {selectedTab === 1 && (
-          <div className="overflow-x-auto TabContent ">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-blue-500 text-white table-main">
-                  <th className="border p-2">S. No.</th>
-                  <th className="border p-2">Patient Name</th>
-                  <th className="border p-2">Patient File Number</th>
-                  <th className="border p-2">Age</th>
-                  <th className="border p-2">Chief Complaint</th>
-                  <th className="border p-2">Personal History</th>
-                  <th className="border p-2">Medical History</th>
-                  <th className="border p-2">Present Illness</th>
-                  <th className="border p-2">Past History</th>
-                  <th className="border p-2">Family History</th>
-                  <th className="border p-2">System Review</th>
-                  <th className="border p-2">Date Of Report</th>
-                  <th className="border p-2">Doctor's Signature</th>
-                  <th className="border p-2">Report</th>
-                  <th className="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReports.length > 0 ? (
-                  filteredReports.map((report, index) => (
-                    <tr key={report.id} className="text-center border">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-blue-500 text-white table-main">
+                <th className="border p-2">S. No.</th>
+                <th className="border p-2">Patient Name</th>
+                <th className="border p-2">File No.</th>
+                <th className="border p-2">Date of Report</th>
+                <th className="border p-2">Source</th>
+                <th className="border p-2">Report</th>
+                <th className="border p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...filteredReports, ...filteredEditorReports].map(
+                (report, index) => {
+                  const isEditorReport = !report.patient_name;
+
+                  return (
+                    <tr key={report.id || index} className="text-center border">
                       <td className="border p-2">{index + 1}</td>
                       <td className="border p-2">{report.patient_name}</td>
-                      <td className="border p-2">{report.id}</td>
-                      <td className="border p-2">{report.age}</td>
-                      <td className="border p-2">{report.chief_complaint}</td>
-                      <td className="border p-2">{report.personal_history}</td>
-                      <td className="border p-2">{report.medical_history}</td>
-                      <td className="border p-2">{report.present_illness}</td>
-                      <td className="border p-2">{report.past_history}</td>
-                      <td className="border p-2">{report.family_history}</td>
-                      <td className="border p-2">{report.system_review}</td>
+                      <td className="border p-2">
+                        {report.fileName || report.fileNumber || "-"}
+                      </td>
                       <td className="border p-2">
                         {
                           new Date(report.date_of_report)
@@ -315,116 +297,58 @@ const RetrieveReport = () => {
                         }
                       </td>
                       <td className="border p-2">
-                        {report.doctor_signature ? (
-                          <img
-                            src={`data:image/png;base64,${report.doctor_signature}`}
-                            alt="Doctor Signature"
-                            className="h-12 w-auto"
-                          />
-                        ) : (
-                          "No Signature"
-                        )}
+                        {report.generatedBy || "-"}
                       </td>
                       <td className="border p-2">
                         <button
                           onClick={() => handleShowReport(report)}
                           className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
                         >
-                          Show Report
+                          Show
                         </button>
                       </td>
-                      <td className="border p-2">
+                      <td className="border p-2 space-x-2">
                         <button
-                          onClick={() => handleDelete(report.id)}
+                          onClick={() =>
+                            handleDelete(report.id, isEditorReport)
+                          }
                           className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
                         >
                           Delete
                         </button>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="11" className="text-center p-4">
-                      No reports found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  );
+                }
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Display Editor Reports in Tab 2 */}
-        {selectedTab === 2 && (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-blue-500 text-white table-main">
-                  <th className="border p-2">S. No.</th>
-                  <th className="border p-2">Date of Report</th>
-                  <th className="border p-2">Report</th>
-                  <th className="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEditorReports.length > 0 ? (
-                  filteredEditorReports.map((report, index) => (
-                    <tr key={report.id} className="text-center border">
-                      <td className="border p-2">{index + 1}</td>
-                      <td className="border p-2">
-                        {" "}
-                        {
-                          new Date(report.date_of_report)
-                            .toISOString()
-                            .split("T")[0]
-                        }
-                      </td>
-                      <td className="border p-2">
-                        {truncateText(report.result, 150)}
-                      </td>
-                      <td className="border p-2">
-                        <button
-                          onClick={() => handleShowReport(report)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
-                        >
-                          Show Report
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="text-center p-4">
-                      No editor reports found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Modal for Compiled Report */}
         {isModalOpen && selectedReport && (
           <div className="fixed inset-0 flex justify-center items-center z-50">
-            {/* Modal Background */}
             <div
               className="absolute inset-0 bg-gray-200 opacity-75"
               onClick={closeModal}
             ></div>
-
-            {/* Modal Content */}
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full z-50 relative">
+            <div
+              className="bg-white rounded-lg shadow-lg max-w-2xl w-full z-50 relative"
+              style={{
+                padding: "36px 31px",
+                border: "1px solid #c9d1d9",
+                marginTop: "148px",
+                marginBottom: "33px",
+              }}
+            >
               <div className="flex-sec">
                 <h2 className="text-xl font-semibold mb-4 text-center">
                   Medical Report
                 </h2>
                 <h3 className="text-xl font-semibold mb-4 text-center">
-                  Report Id:{selectedReport.id}
+                  Report Id: {selectedReport.id}
                 </h3>
               </div>
-              <div className="max-h-96 overflow-y-auto p-4 border rounded space-y-2">
+              <div className="max-h-96 overflow-y-auto p-4 space-y-2">
                 {formatMedicalReport(
                   selectedReport.compiled_report || selectedReport.result
                 )}

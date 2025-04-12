@@ -11,6 +11,7 @@ import Dashboard from './components/AdminDashboard';
 import UserList from "./components/UserList";
 import MedicalReports from './components/Reports';
 import RetrieveReport from './components/RetrieveReport';
+import Setting from './components/Setting';
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
           <Route path="/retrieve-report" element={<><Navbar /><RetrieveReport /></>} />
           <Route path="/template" element={<><Navbar /><ReportTemplate /></>} />
           <Route path="/upload-report" element={<><Navbar /><UploadReport /></>} />
-          <Route path="/settings" element={<><Navbar /><h2>Settings Page</h2></>} />
+          <Route path="/settings" element={<><Navbar /><Setting /></>} />
         </Route>
 
         {/* Catch-All Route: Redirects unknown routes to /login */}

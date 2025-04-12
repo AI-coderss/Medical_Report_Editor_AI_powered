@@ -79,6 +79,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 class MedicalReport(Document):
     patient_name = StringField(max_length=100)
     age = StringField(max_length=10)
+    fileNumber = StringField(max_length=100)
     personal_history = StringField()
     chief_complaint = StringField()
     present_illness = StringField()
@@ -87,7 +88,8 @@ class MedicalReport(Document):
     family_history = StringField()
     system_review = StringField()
     compiled_report = StringField()
-    doctor_signature = FileField()
+    # doctor_signature = FileField()
+    generatedBy = StringField(required=True)    
     date_of_report = DateTimeField(default=datetime.utcnow)
     doctor_id = StringField(required=True)
 # class Editor(Document):
@@ -99,8 +101,11 @@ class MedicalReport(Document):
 class Editor(Document):
     result = StringField(required=True)
     date_of_report = DateTimeField(default=datetime.utcnow)
-    doctor_id = StringField(required=True)    
-    meta = {'collection': 'corrected_reports'}
+    doctor_id = StringField(required=True)
+    patient_name = StringField(required=True)
+    fileNumber = StringField(required=True) 
+    generatedBy = StringField(required=True)    
+    meta = {'collection': 'Editor_reports'}
 
 def validate_email(email):
     regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -447,20 +452,20 @@ def get_reports():
                 signature_data = base64.b64encode(report.doctor_signature.read()).decode('utf-8')
 
             report_dict = {
-                "id": str(report.id),
-                "patient_name": report.patient_name,
-                "age": report.age,
-                "personal_history": report.personal_history,
-                "chief_complaint": report.chief_complaint,
-                "present_illness": report.present_illness,
-                "medical_history": report.medical_history,
-                "past_history": report.past_history,
-                "family_history": report.family_history,
-                "system_review": report.system_review,
-                "compiled_report": report.compiled_report,
-                "doctor_signature": signature_data,
-                "date_of_report": report.date_of_report.isoformat() if report.date_of_report else None,
-                "doctor_id": report.doctor_id
+            "id": str(report.id),
+            "patient_name": report.patient_name,
+            "age": report.age,
+            "fileName":report.fileNumber,
+            "personal_history": report.personal_history,
+            "chief_complaint": report.chief_complaint,
+            "present_illness": report.present_illness,
+            "medical_history": report.medical_history,
+            "past_history": report.past_history,
+            "family_history": report.family_history,
+            "system_review": report.system_review,
+            "date_of_report": report.date_of_report,
+            "doctor_id": report.doctor_id,
+            "compiled_report": report.compiled_report,
             }
 
             report_list.append(report_dict)
@@ -505,10 +510,6 @@ def delete_medical_report(report_id):
         if not report:
             return jsonify({'error': 'Medical report not found'}), 404
 
-          
-        if report.doctor_signature:
-            report.doctor_signature.delete()
-
         # Delete the report
         report.delete()
 
@@ -520,6 +521,28 @@ def delete_medical_report(report_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/editor-report-delete/<report_id>', methods=['DELETE'])
+@jwt_required()
+def delete_editor_report(report_id):
+    try:
+        # Find the editor report
+        report = Editor.objects(id=report_id).first()
+        if not report:
+            return jsonify({'error': 'Editor report not found'}), 404
+
+        # Delete the report
+        report.delete()
+
+        # Return success response
+        return jsonify({
+            'message': 'Editor report deleted successfully',
+            'id': report_id
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # ✅ 1️⃣ Corrects and improves the report (Original functionality)
 @app.route('/correct-text', methods=['POST'])
@@ -528,6 +551,13 @@ def correct_text():
     try:
         data = request.get_json()
         input_text = data.get("text", "")
+        patient_name = data.get("patient_name", "").strip()
+        fileNumber = data.get("patient_age", "").strip()
+        doctor_name = data.get("doctor_name", "Dr.Test").strip()
+        department = data.get("department", "Department-Test").strip()
+
+        if not patient_name or not fileNumber:
+            return jsonify({"error": "Patient name and File Number are required."}), 400
 
         if not input_text.strip():
             return jsonify({"error": "Empty text provided"}), 400
@@ -538,6 +568,11 @@ def correct_text():
         - Grammatical accuracy
         - Professional tone
         - Adherence to standard medical documentation formats.
+        - Show the patinet name and age at the top of the report like this 
+            Patient Name - {patient_name}
+
+        - Also at the end of the report i want you to write this following 
+         This report was electronically signed by Doctor - {doctor_name} , Depratment- {department} .
 
         **Formatting Instructions:**
         - **The report title should be bold and centered.**
@@ -555,8 +590,16 @@ def correct_text():
 
         corrected_text = response.choices[0].message.content.strip()
         doctor_id = get_jwt_identity()
-        editor_entry = Editor(result=corrected_text,doctor_id=doctor_id,date_of_report=datetime.utcnow())
+        editor_entry = Editor(
+            result=corrected_text,
+            doctor_id=doctor_id,
+            date_of_report=datetime.utcnow(),
+            patient_name=patient_name,
+            fileNumber=fileNumber,
+            generatedBy="Editor Page"
+        )
         editor_entry.save()
+
 
         # Return response
         return jsonify({
@@ -602,6 +645,9 @@ def all_editor_report():
         data_list.append({
             "id":str(item.id),
             "result": item.result,
+            "patient_name": item.patient_name,       # ✅ added
+            "fileNumber": item.fileNumber,
+            "generatedBy":item.generatedBy,
             "date_of_report": item.date_of_report
         })
     
@@ -691,6 +737,7 @@ def create_medical_report():
         # Extract form fields
         patient_name = request.form.get("patientName")
         age = request.form.get("age")
+        fileNumber = request.form.get("fileNumber")
         personal_history = request.form.get("personalHistory")
         chief_complaint = request.form.get("chiefComplaint")
         present_illness = request.form.get("presentIllness")
@@ -699,14 +746,16 @@ def create_medical_report():
         family_history = request.form.get("familyHistory")
         system_review = request.form.get("systemReview")
         doctor_id = get_jwt_identity()
-
+        doctor_name =request.form.get("doctor_name", "Dr.Test").strip()
+        department = request.form.get("department", "Department-Test").strip()
         # Generate AI medical report
         structured_prompt = f"""
-        You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
+        You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs at the end its necessary to write that this report is electronically signed by Doctor Name,Doctor Department:
 
         **Patient Information:**
         - Name: {patient_name}
         - Age: {age}
+        - File Number: {fileNumber} 
 
         **Chief Complaint:**
         {chief_complaint}
@@ -728,6 +777,8 @@ def create_medical_report():
 
         **System Review:**
         {system_review}
+
+        This report is electronically signed by Doctor - {doctor_name}, Department - {department}
         """
 
         response = client.chat.completions.create(
@@ -736,26 +787,28 @@ def create_medical_report():
         )
 
         compiled_report = response.choices[0].message.content.strip()
+        generatedBy="Template Page"
 
         # Handle doctor signature upload
-        if "doctorSignature" not in request.files:
-            return jsonify({"error": "No doctor signature file provided"}), 400
+        # if "doctorSignature" not in request.files:
+        #     return jsonify({"error": "No doctor signature file provided"}), 400
 
-        file = request.files["doctorSignature"]
-        if file.filename == "":
-            return jsonify({"error": "No file selected"}), 400
+        # file = request.files["doctorSignature"]
+        # if file.filename == "":
+        #     return jsonify({"error": "No file selected"}), 400
 
-        if not allowed_file(file.filename):
-            return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
+        # if not allowed_file(file.filename):
+        #     return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
 
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(file_path)
+        # filename = secure_filename(file.filename)
+        # file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        # file.save(file_path)
 
         # Create and save report in MongoDB
         report = MedicalReport(
             patient_name=patient_name,
             age=age,
+            fileNumber=fileNumber,
             personal_history=personal_history,
             chief_complaint=chief_complaint,
             present_illness=present_illness,
@@ -764,17 +817,18 @@ def create_medical_report():
             family_history=family_history,
             system_review=system_review,
             compiled_report=compiled_report,
+            generatedBy=generatedBy,
             doctor_id=doctor_id,
         )
 
         # Store the signature file in GridFS
-        with open(file_path, "rb") as f:
-            report.doctor_signature.put(f, content_type=file.content_type)
+        # with open(file_path, "rb") as f:
+        #     report.doctor_signature.put(f, content_type=file.content_type)
 
         report.save()
 
         # Remove file from local disk
-        os.remove(file_path)
+        # os.remove(file_path)
 
         return jsonify({
             "compiled_report": compiled_report,
@@ -790,20 +844,21 @@ def create_medical_report():
 def doctor_report():
     doctor_id = get_jwt_identity()
     print(doctor_id)
-    reports = MedicalReport.objects(doctor_id=doctor_id)
+    reports = MedicalReport.objects()
     if not reports:
         return jsonify({"message": "No report found for this doctor"}), 404
     
     report_list = []
     for report in reports:
         # Read the GridFS file (doctor_signature) and encode it as base64
-        signature_data = report.doctor_signature.read()  
-        signature_base64 = base64.b64encode(signature_data).decode('utf-8')  # Convert to base64 string
+        # signature_data = report.doctor_signature.read()  
+        # signature_base64 = base64.b64encode(signature_data).decode('utf-8')  # Convert to base64 string
         
         report_list.append({
             "id": str(report.id),
             "patient_name": report.patient_name,
             "age": report.age,
+            "fileName":report.fileNumber,
             "personal_history": report.personal_history,
             "chief_complaint": report.chief_complaint,
             "present_illness": report.present_illness,
@@ -813,8 +868,9 @@ def doctor_report():
             "system_review": report.system_review,
             "date_of_report": report.date_of_report,
             "doctor_id": report.doctor_id,
+            "generatedBy": report.generatedBy,
             "compiled_report": report.compiled_report,
-            "doctor_signature": signature_base64,  # Include the base64-encoded signature
+            # "doctor_signature": signature_base64,  # Include the base64-encoded signature
         })
     
     return jsonify(report_list), 200  # Move return outside the loop

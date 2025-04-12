@@ -29,23 +29,29 @@ import MistakeSidebar from "./MistakeSidebar";
 import PDFDownloader from "./PdfDownloader";
 import SignatureCanvas from "react-signature-canvas";
 import Cookies from "js-cookie";
+import Loader from "../components/Loader";
 
 // ✅ Local Storage Keys
 const REPORT_STORAGE_KEY = "savedReportContent";
 const FORMATTED_STORAGE_KEY = "savedFormattedMarkdown";
 const MISTAKES_STORAGE_KEY = "savedMistakes";
 const SIGNATURE_STORAGE_KEY = "savedSignature";
-const department = Cookies.get("department") || "Unknown Department";
-const firstName = Cookies.get("FirstName") || "Unknown";
-const lastName = Cookies.get("LastName") || "Doctor";
-
+const doctorName = localStorage.getItem("doctorName") || "Dr.Test";
+const department = localStorage.getItem("department") || "Department-Test";
 // ✅ Error detection strategy
 const errorStrategy = (contentBlock, callback) => {
   const text = contentBlock.getText();
   const regex = /\*\*(.*?)\*\*\s\((.*?)\)/g;
   let matchArr;
+
   while ((matchArr = regex.exec(text)) !== null) {
-    callback(matchArr.index, matchArr.index + matchArr[1].length);
+    const [fullMatch, match1] = matchArr;
+
+    if (typeof match1 === "string") {
+      const start = matchArr.index;
+      const end = start + match1.length;
+      callback(start, end);
+    }
   }
 };
 
@@ -61,7 +67,10 @@ function ReportEditor() {
   const decorator = useMemo(
     () =>
       new CompositeDecorator([
-        { strategy: errorStrategy, component: ErrorSpan },
+        {
+          strategy: errorStrategy,
+          component: ErrorSpan,
+        },
       ]),
     []
   );
@@ -77,6 +86,9 @@ function ReportEditor() {
   const [formattedMarkdown, setFormattedMarkdown] = useState("");
   const [signature, setSignature] = useState(null);
   const sigCanvas = useRef(null);
+  const [readyToRender, setReadyToRender] = useState(true);
+  const [patientName, setPatientName] = useState("");
+  const [patientAge, setPatientAge] = useState("");
 
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
@@ -133,16 +145,29 @@ function ReportEditor() {
   const toggleBlockType = (blockType) => {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
   };
-  const handleClearReport = () => {
-    setEditorState(
-      EditorState.createEmpty(
-        new CompositeDecorator([
-          { strategy: errorStrategy, component: ErrorSpan },
-        ])
-      )
-    ); // Reset with a new decorator instance
-    setFormattedMarkdown(""); // Clear formatted Markdown preview
-    setMistakes(null); // Clear mistakes
+  function SafeMarkdown({ content }) {
+    if (typeof content !== "string" || content.trim() === "") {
+      return null;
+    }
+
+    try {
+      return <ReactMarkdown>{content}</ReactMarkdown>;
+    } catch (err) {
+      console.error("Error rendering markdown:", err);
+      return <p style={{ color: "red" }}>Markdown render failed.</p>;
+    }
+  }
+
+  const clearEditorContent = () => {
+    const emptyState = EditorState.createEmpty(decorator);
+    setEditorState(emptyState);
+    setFormattedMarkdown("");
+    setReadyToRender(true);
+    setMistakes(null);
+    console.log("Clearing editor with decorator:", decorator);
+    if (sigCanvas.current) {
+      clearSignature();
+    }
     localStorage.removeItem(REPORT_STORAGE_KEY);
     localStorage.removeItem(FORMATTED_STORAGE_KEY);
     localStorage.removeItem(MISTAKES_STORAGE_KEY);
@@ -195,7 +220,13 @@ function ReportEditor() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ text: plainText }),
+          body: JSON.stringify({
+            text: plainText,
+            patient_name: patientName,
+            patient_age: patientAge,
+            doctor_name: doctorName,
+            department: department,
+          }),
         }
       );
 
@@ -323,7 +354,7 @@ function ReportEditor() {
             {loading ? "Editing..." : "Enhance Report with AI"}
           </button>
           {/* ✅ Clear Button */}
-          <button className="edit-btn clear-btn" onClick={handleClearReport}>
+          <button className="edit-btn clear-btn" onClick={clearEditorContent}>
             Clear 🧹
           </button>
 
@@ -336,18 +367,110 @@ function ReportEditor() {
           </button>
         </div>
       </div>
+      <div className="loader-circle">
+        {" "}
+        {loading && <Loader isLoading={loading} />}
+      </div>
+      <div className=" mx-auto p-6 bg-white rounded-2xl shadow-lg space-y-8 space-top">
+        {/* Top Heading */}
+
+        {/* Form Row: Name & Age */}
+        <div className="max-w-4xl mx-auto mt-10 p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl  space-y-10 ">
+          {/* Title */}
+          <h2 className="text-3xl font-bold text-center text-gray-800 tracking-tight">
+            Patient Information
+          </h2>
+
+          {/* Patient Details: 2 Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col">
+              <label className="Small-medium text-gray-700 mb-2">
+                Patient Name
+              </label>
+              <input
+                type="text"
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                placeholder="Enter patient name"
+                className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="Small-medium  font-semibold text-gray-700 mb-2">
+                Patient File Number
+              </label>
+              <input
+                type="text"
+                value={patientAge}
+                onChange={(e) => setPatientAge(e.target.value)}
+                placeholder="Enter patient file Number"
+                className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              />
+            </div>
+          </div>
+
+          {/* Report Section */}
+          <div className="space-y-4">
+            <h3 className="Small-medium font-bold text-gray-800 pb-2 report">
+              Medical Report
+            </h3>
+
+            {readyToRender &&
+              (typeof formattedMarkdown === "string" &&
+              formattedMarkdown.trim().length > 0 ? (
+                <div className="prose max-w-none border border-gray-200 p-4 rounded-xl bg-white shadow-sm">
+                  <SafeMarkdown content={formattedMarkdown} />
+                </div>
+              ) : (
+                <div className="border border-gray-300 rounded-xl p-4 shadow-sm bg-white">
+                  <Editor
+                    editorState={editorState}
+                    onChange={handleEditorChange}
+                    placeholder="Write your medical report here..."
+                  />
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Report Editor Row */}
+        {/* <div className="space-y-4">
+          {loading && <Loader isLoading={loading} />}
+
+          {readyToRender &&
+            (typeof formattedMarkdown === "string" &&
+            formattedMarkdown.trim().length > 0 ? (
+              <div className="prose max-w-none border border-gray-200 p-4 rounded-xl bg-gray-50">
+                <SafeMarkdown content={formattedMarkdown} />
+              </div>
+            ) : (
+              <div className="border border-gray-300 rounded-xl p-4 shadow-sm bg-white">
+                <Editor
+                  editorState={editorState}
+                  onChange={handleEditorChange}
+                  placeholder="Write your medical report here..."
+                />
+              </div>
+            ))}
+        </div> */}
+      </div>
 
       {/* Editor or Markdown Preview */}
-      <div className="word-editor" style={{ fontFamily: selectedFont }}>
-        {formattedMarkdown ? (
-          <ReactMarkdown>{formattedMarkdown}</ReactMarkdown>
-        ) : (
-          <Editor
-            editorState={editorState}
-            onChange={handleEditorChange}
-            placeholder="Write your medical report here..."
-          />
-        )}
+      {/* <div className="word-editor" style={{ fontFamily: selectedFont }}>
+        {loading && <Loader isLoading={loading} />}
+        {readyToRender &&
+          (typeof formattedMarkdown === "string" &&
+          formattedMarkdown.trim().length > 0 ? (
+            <SafeMarkdown content={formattedMarkdown} />
+          ) : (
+            <Editor
+              editorState={editorState}
+              onChange={handleEditorChange}
+              placeholder="Write your medical report here..."
+            />
+          ))}
+
         {signature && (
           <div className="signature-display">
             <p>
@@ -366,25 +489,8 @@ function ReportEditor() {
             />
           </div>
         )}
-      </div>
+      </div> */}
 
-      {/* Signature Section */}
-      <div className="signature-section">
-        <h3>Add your Signature</h3>
-        <SignatureCanvas
-          ref={sigCanvas}
-          penColor="black"
-          canvasProps={{
-            className: "signature-pad",
-            width: 400,
-            height: 150,
-          }}
-        />
-        <div className="signature-buttons">
-          <button onClick={saveSignature}>Save Signature</button>
-          <button onClick={clearSignature}>Clear</button>
-        </div>
-      </div>
       {/* Sidebar */}
       <MistakeSidebar
         mistakes={mistakes}

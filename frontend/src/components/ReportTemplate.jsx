@@ -3,11 +3,13 @@ import SignatureCanvas from "react-signature-canvas";
 import "../styles/ReportTemplate.css";
 import PDFDownloader from "./PdfDownloader";
 import Cookies from "js-cookie";
+import Loader from "../components/Loader";
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
     patientName: "",
     age: "",
+    fileNumber: "",
     chiefComplaint: "",
     personalHistory: "",
     presentIllness: "",
@@ -15,28 +17,25 @@ function ReportTemplate() {
     pastHistory: "",
     familyHistory: "",
     systemReview: "",
-    doctorSignature: "",
+    // doctorSignature: "",
   });
 
   const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
   const [loading, setLoading] = useState(false);
-  const [signatureBase64, setSignatureBase64] = useState("");
-  const signatureRef = useRef(null);
-  const department = Cookies.get("department") || "Unknown Department";
-  const firstName = Cookies.get("FirstName") || "Unknown";
-  const lastName = Cookies.get("LastName") || "Doctor";
-
+  // const [signatureBase64, setSignatureBase64] = useState("");
+  // const signatureRef = useRef(null);
+  const doctorName = localStorage.getItem("doctorName") || "Dr.Test";
+  const department = localStorage.getItem("department") || "Department-Test";
   const validateForm = () => {
     let newErrors = {};
 
     if (formData.age && isNaN(formData.age)) {
       newErrors.age = "Age must be a valid number.";
     }
-
-    if (signatureRef.current && signatureRef.current.isEmpty()) {
-      newErrors.doctorSignature = "Signature is required.";
-    }
+    // if (signatureRef.current && signatureRef.current.isEmpty()) {
+    //   newErrors.doctorSignature = "Signature is required.";
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -58,7 +57,7 @@ function ReportTemplate() {
   };
 
   const handleClearSignature = () => {
-    signatureRef.current.clear();
+    // signatureRef.current.clear();
     setFormData((prevData) => ({
       ...prevData,
       doctorSignature: "",
@@ -82,18 +81,25 @@ function ReportTemplate() {
         formDataToSend.append(key, formData[key]);
       }
     });
-
+    formDataToSend.append(
+      "doctor_name",
+      localStorage.getItem("doctorName") || "Dr.Test"
+    );
+    formDataToSend.append(
+      "department",
+      localStorage.getItem("department") || "Department-Test"
+    );
     // Handle the signature image
-    if (signatureRef.current) {
-      const signatureDataURL = signatureRef.current.toDataURL("image/png");
-      const blob = await (await fetch(signatureDataURL)).blob();
-      formDataToSend.append("doctorSignature", blob, "signature.png");
-    }
+    // if (signatureRef.current) {
+    //   const signatureDataURL = signatureRef.current.toDataURL("image/png");
+    //   const blob = await (await fetch(signatureDataURL)).blob();
+    //   formDataToSend.append("doctorSignature", blob, "signature.png");
+    // }
 
-    if (signatureRef.current && !signatureRef.current.isEmpty()) {
-      const signatureDataURL = signatureRef.current.toDataURL("image/png");
-      setSignatureBase64(signatureDataURL); // Update state
-    }
+    // if (signatureRef.current && !signatureRef.current.isEmpty()) {
+    //   const signatureDataURL = signatureRef.current.toDataURL("image/png");
+    //   setSignatureBase64(signatureDataURL); // Update state
+    // }
 
     setLoading(true);
 
@@ -115,18 +121,18 @@ function ReportTemplate() {
       // Wait for both API requests to finish
       const [apiTwoResponse] = await Promise.all([apiTwoRequest]);
 
-      const signatureDataURL =
-        signatureRef.current && !signatureRef.current.isEmpty()
-          ? signatureRef.current.toDataURL("image/png")
-          : null;
-      const signatureImageTag = signatureDataURL
-        ? `<img src="${signatureDataURL}" alt="Doctor's Signature" style="height:50px; width:auto; display:block; margin-top:10px;" />`
-        : "";
+      // const signatureDataURL =
+      //   signatureRef.current && !signatureRef.current.isEmpty()
+      //     ? signatureRef.current.toDataURL("image/png")
+      //     : null;
+      // const signatureImageTag = signatureDataURL
+      //   ? `<img src="${signatureDataURL}" alt="Doctor's Signature" style="height:50px; width:auto; display:block; margin-top:10px;" />`
+      //   : "";
       const apiTwoData = await apiTwoResponse.json();
       if (apiTwoResponse.ok) {
         setCompiledReport(
           (prevCompiledReport) =>
-            `${prevCompiledReport}\n\nAI Compiled Report:\n${apiTwoData.compiled_report}\n`
+            `${prevCompiledReport}\n${apiTwoData.compiled_report}\n`
         );
       } else {
         alert("Error: " + apiTwoData.error);
@@ -145,6 +151,7 @@ function ReportTemplate() {
     setFormData({
       patientName: "",
       age: "",
+      fileNumber: "",
       chiefComplaint: "",
       personalHistory: "",
       presentIllness: "",
@@ -156,11 +163,12 @@ function ReportTemplate() {
     });
     setCompiledReport("");
     setErrors({});
-    if (signatureRef.current) signatureRef.current.clear();
+    // if (signatureRef.current) signatureRef.current.clear();
   };
 
   return (
     <div className="report-container">
+      {loading && <Loader isLoading={loading} />}
       <div className="toolbar">
         <h2>Medical Report Editor</h2>
         <button
@@ -193,7 +201,13 @@ function ReportTemplate() {
               value={formData.age}
               onChange={handleChange}
             />
-
+            <label>Patient File Number:</label>
+            <input
+              type="text"
+              name="fileNumber"
+              value={formData.fileNumber}
+              onChange={handleChange}
+            />
             <label>Chief Complaint:</label>
             <textarea
               name="chiefComplaint"
@@ -243,7 +257,7 @@ function ReportTemplate() {
               onChange={handleChange}
             />
 
-            <label>Doctor's Signature:</label>
+            {/* <label>Doctor's Signature:</label>
             <div className="signature-container">
               <SignatureCanvas
                 ref={signatureRef}
@@ -262,7 +276,7 @@ function ReportTemplate() {
               <span className="text-red-500 error-message">
                 {errors.doctorSignature}
               </span>
-            )}
+            )} */}
           </form>
         </div>
 
@@ -277,7 +291,7 @@ function ReportTemplate() {
               <PDFDownloader
                 content={compiledReport}
                 fileName="Medical_Report.pdf"
-                signature={signatureBase64}
+                // signature={signatureBase64}
               />
             </>
           ) : (
