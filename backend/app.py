@@ -89,7 +89,9 @@ class MedicalReport(Document):
     system_review = StringField()
     compiled_report = StringField()
     # doctor_signature = FileField()
-    generatedBy = StringField(required=True)    
+    generatedBy = StringField(required=True)   
+    department = StringField()
+    doctor_name = StringField()
     date_of_report = DateTimeField(default=datetime.utcnow)
     doctor_id = StringField(required=True)
 # class Editor(Document):
@@ -103,8 +105,11 @@ class Editor(Document):
     date_of_report = DateTimeField(default=datetime.utcnow)
     doctor_id = StringField(required=True)
     patient_name = StringField(required=True)
+    patient_age = StringField(required=True)
     fileNumber = StringField(required=True) 
-    generatedBy = StringField(required=True)    
+    generatedBy = StringField(required=True)   
+    department = StringField()
+    doctor_name = StringField() 
     meta = {'collection': 'Editor_reports'}
 
 def validate_email(email):
@@ -465,6 +470,8 @@ def get_reports():
             "system_review": report.system_review,
             "date_of_report": report.date_of_report,
             "doctor_id": report.doctor_id,
+            "doctor_name": report.doctor_name,
+            "department": report.department,
             "compiled_report": report.compiled_report,
             }
 
@@ -552,7 +559,8 @@ def correct_text():
         data = request.get_json()
         input_text = data.get("text", "")
         patient_name = data.get("patient_name", "").strip()
-        fileNumber = data.get("patient_age", "").strip()
+        fileNumber = data.get("patient_fileNumber", "").strip()
+        patient_age = data.get("patient_age", "").strip()
         doctor_name = data.get("doctor_name", "Dr.Test").strip()
         department = data.get("department", "Department-Test").strip()
 
@@ -569,7 +577,7 @@ def correct_text():
         - Professional tone
         - Adherence to standard medical documentation formats.
         - Show the patinet name and age at the top of the report like this 
-            Patient Name - {patient_name}
+            Patient Name - {patient_name} , Patient Age - {patient_age}
 
         - Also at the end of the report i want you to write this following 
          This report was electronically signed by Doctor - {doctor_name} , Depratment- {department} .
@@ -595,7 +603,10 @@ def correct_text():
             doctor_id=doctor_id,
             date_of_report=datetime.utcnow(),
             patient_name=patient_name,
+            patient_age=patient_age,
             fileNumber=fileNumber,
+            doctor_name=doctor_name,
+            department=department,
             generatedBy="Editor Page"
         )
         editor_entry.save()
@@ -648,6 +659,8 @@ def all_editor_report():
             "patient_name": item.patient_name,       # ✅ added
             "fileNumber": item.fileNumber,
             "generatedBy":item.generatedBy,
+            "doctor_name": item.doctor_name,
+            "department": item.department,
             "date_of_report": item.date_of_report
         })
     
@@ -818,6 +831,8 @@ def create_medical_report():
             system_review=system_review,
             compiled_report=compiled_report,
             generatedBy=generatedBy,
+            doctor_name=doctor_name,
+            department=department,
             doctor_id=doctor_id,
         )
 
@@ -869,6 +884,8 @@ def doctor_report():
             "date_of_report": report.date_of_report,
             "doctor_id": report.doctor_id,
             "generatedBy": report.generatedBy,
+            "doctor_name": report.doctor_name,
+            "department": report.department,
             "compiled_report": report.compiled_report,
             # "doctor_signature": signature_base64,  # Include the base64-encoded signature
         })

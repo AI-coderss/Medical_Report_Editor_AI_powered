@@ -89,6 +89,7 @@ function ReportEditor() {
   const [readyToRender, setReadyToRender] = useState(true);
   const [patientName, setPatientName] = useState("");
   const [patientAge, setPatientAge] = useState("");
+  const [patientFileNumber, setpatientFileNumber] = useState("");
 
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
@@ -224,6 +225,7 @@ function ReportEditor() {
             text: plainText,
             patient_name: patientName,
             patient_age: patientAge,
+            patient_fileNumber: patientFileNumber,
             doctor_name: doctorName,
             department: department,
           }),
@@ -382,7 +384,7 @@ function ReportEditor() {
           </h2>
 
           {/* Patient Details: 2 Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col">
               <label className="Small-medium text-gray-700 mb-2">
                 Patient Name
@@ -398,12 +400,24 @@ function ReportEditor() {
 
             <div className="flex flex-col">
               <label className="Small-medium  font-semibold text-gray-700 mb-2">
-                Patient File Number
+                Patient Age
               </label>
               <input
                 type="text"
                 value={patientAge}
                 onChange={(e) => setPatientAge(e.target.value)}
+                placeholder="Enter patient Age"
+                className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="Small-medium  font-semibold text-gray-700 mb-2">
+                Patient File Number
+              </label>
+              <input
+                type="text"
+                value={patientFileNumber}
+                onChange={(e) => setpatientFileNumber(e.target.value)}
                 placeholder="Enter patient file Number"
                 className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               />

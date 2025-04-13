@@ -271,6 +271,8 @@ const RetrieveReport = () => {
                 <th className="border p-2">S. No.</th>
                 <th className="border p-2">Patient Name</th>
                 <th className="border p-2">File No.</th>
+                <th className="border p-2">Doctor Name</th>
+                <th className="border p-2">Doctor Department</th>
                 <th className="border p-2">Date of Report</th>
                 <th className="border p-2">Source</th>
                 <th className="border p-2">Report</th>
@@ -289,6 +291,8 @@ const RetrieveReport = () => {
                       <td className="border p-2">
                         {report.fileName || report.fileNumber || "-"}
                       </td>
+                      <td className="border p-2">{report.doctor_name}</td>
+                      <td className="border p-2">{report.department}</td>
                       <td className="border p-2">
                         {
                           new Date(report.date_of_report)
