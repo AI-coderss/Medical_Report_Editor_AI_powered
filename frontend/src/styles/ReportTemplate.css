@@ -110,7 +110,7 @@ button:disabled {
 .report-form-container {
   background: white;
   width: 794px; /* A4 width */
-  min-height: 1400px; /* Adjusted height */
+  /*min-height: 1400px;*/ /* Adjusted height */
   padding: 30px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   margin-top: 20px; /* Reduced gap */
