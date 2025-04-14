@@ -301,51 +301,52 @@ const MedicalReports = () => {
               </tr>
             </thead>
             <tbody>
-              {[...filteredReports, ...filteredEditorReports].map(
-                (report, index) => {
-                  const isEditorReport = !report.patient_name;
-
-                  return (
-                    <tr key={report.id || index} className="text-center border">
-                      <td className="border p-2">{index + 1}</td>
-                      <td className="border p-2">{report.patient_name}</td>
-                      <td className="border p-2">
-                        {report.fileName || report.fileNumber || "-"}
-                      </td>
-                      <td className="border p-2">{report.doctor_name}</td>
-                      <td className="border p-2">{report.department}</td>
-                      <td className="border p-2">
-                        {
-                          new Date(report.date_of_report)
-                            .toISOString()
-                            .split("T")[0]
-                        }
-                      </td>
-                      <td className="border p-2">
-                        {report.generatedBy || "-"}
-                      </td>
-                      <td className="border p-2">
-                        <button
-                          onClick={() => handleShowReport(report)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
-                        >
-                          Show
-                        </button>
-                      </td>
-                      <td className="border p-2 space-x-2">
-                        <button
-                          onClick={() =>
-                            handleDelete(report.id, isEditorReport)
-                          }
-                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
+              {[
+                ...filteredReports.map((r) => ({
+                  ...r,
+                  isEditorReport: false,
+                })),
+                ...filteredEditorReports.map((r) => ({
+                  ...r,
+                  isEditorReport: true,
+                })),
+              ].map((report, index) => (
+                <tr key={report.id || index} className="text-center border">
+                  <td className="border p-2">{index + 1}</td>
+                  <td className="border p-2">{report.patient_name}</td>
+                  <td className="border p-2">
+                    {report.fileName || report.fileNumber || "-"}
+                  </td>
+                  <td className="border p-2">{report.doctor_name}</td>
+                  <td className="border p-2">{report.department}</td>
+                  <td className="border p-2">
+                    {
+                      new Date(report.date_of_report)
+                        .toISOString()
+                        .split("T")[0]
+                    }
+                  </td>
+                  <td className="border p-2">{report.generatedBy || "-"}</td>
+                  <td className="border p-2">
+                    <button
+                      onClick={() => handleShowReport(report)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    >
+                      Show
+                    </button>
+                  </td>
+                  <td className="border p-2 space-x-2">
+                    <button
+                      onClick={() =>
+                        handleDelete(report.id, report.isEditorReport)
+                      }
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
