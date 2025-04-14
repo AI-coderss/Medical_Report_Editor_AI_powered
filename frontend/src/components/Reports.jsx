@@ -13,7 +13,8 @@ const MedicalReports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("doctor"); // 'doctor' or 'editor'
-  const [selectedDate, setSelectedDate] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const handleShowReport = (report) => {
     setSelectedReport(report);
@@ -202,6 +203,10 @@ const MedicalReports = () => {
   };
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
+      const reportDate = new Date(report.date_of_report)
+        .toISOString()
+        .split("T")[0];
+
       const matchesSearch =
         (report.patient_name?.toLowerCase() || "").includes(
           searchQuery.toLowerCase()
@@ -217,16 +222,20 @@ const MedicalReports = () => {
         );
 
       const matchesDate =
-        !selectedDate ||
-        new Date(report.date_of_report).toISOString().split("T")[0] ===
-          selectedDate;
+        (!fromDate && !toDate) ||
+        (fromDate && !toDate && reportDate === fromDate) ||
+        (fromDate && toDate && reportDate >= fromDate && reportDate <= toDate);
 
       return matchesSearch && matchesDate;
     });
-  }, [reports, searchQuery, selectedDate]);
+  }, [reports, searchQuery, fromDate, toDate]);
 
   const filteredEditorReports = useMemo(() => {
     return editorReports.filter((report) => {
+      const reportDate = new Date(report.date_of_report)
+        .toISOString()
+        .split("T")[0];
+
       const matchesSearch =
         (report.result?.toLowerCase() || "").includes(
           searchQuery.toLowerCase()
@@ -239,13 +248,13 @@ const MedicalReports = () => {
         );
 
       const matchesDate =
-        !selectedDate ||
-        new Date(report.date_of_report).toISOString().split("T")[0] ===
-          selectedDate;
+        (!fromDate && !toDate) ||
+        (fromDate && !toDate && reportDate === fromDate) ||
+        (fromDate && toDate && reportDate >= fromDate && reportDate <= toDate);
 
       return matchesSearch && matchesDate;
     });
-  }, [editorReports, searchQuery, selectedDate]);
+  }, [editorReports, searchQuery, fromDate, toDate]);
 
   return (
     <div className="p-4 w-full">
@@ -257,23 +266,45 @@ const MedicalReports = () => {
       <div className="inputdiv">
         <input
           type="text"
-          placeholder="Search by Patient Name or Chief Complaint..."
+          placeholder="Search Report..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="border user-input p-2 mb-4 w-full rounded"
         />
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="border user-input p-2 mb-4 w-full rounded"
-        />
-        {selectedDate && (
+        <div className="flex gap-2 mb-4">
+          <p className=" text-xl text-gray-600">From Date:</p>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border user-input datepick p-2 w-full rounded"
+            placeholder="From Date"
+          />
+          <p className=" text-xl text-gray-600">To Date:</p>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border user-input datepick p-2 w-full rounded"
+            placeholder="To Date"
+          />
+        </div>
+        {(fromDate || toDate) && (
           <p className="mb-2 text-sm text-gray-600">
-            Showing reports for: <strong>{selectedDate}</strong>
+            Showing reports for:
+            <strong className="ml-1">
+              {fromDate && !toDate
+                ? ` ${fromDate}`
+                : fromDate && toDate
+                ? ` ${fromDate} to ${toDate}`
+                : ` ${toDate}`}
+            </strong>
             <button
               className="ml-4 text-red-500 underline"
-              onClick={() => setSelectedDate("")}
+              onClick={() => {
+                setFromDate("");
+                setToDate("");
+              }}
             >
               Clear
             </button>
@@ -290,8 +321,9 @@ const MedicalReports = () => {
             <thead>
               <tr className="bg-blue-500 text-white table-main">
                 <th className="border p-2">S. No.</th>
-                <th className="border p-2">Patient Name</th>
                 <th className="border p-2">File No.</th>
+                <th className="border p-2">Patient Name</th>
+                <th className="border p-2">Patient Age</th>
                 <th className="border p-2">Doctor Name</th>
                 <th className="border p-2">Doctor Department</th>
                 <th className="border p-2">Date of Report</th>
@@ -313,10 +345,11 @@ const MedicalReports = () => {
               ].map((report, index) => (
                 <tr key={report.id || index} className="text-center border">
                   <td className="border p-2">{index + 1}</td>
-                  <td className="border p-2">{report.patient_name}</td>
                   <td className="border p-2">
                     {report.fileName || report.fileNumber || "-"}
                   </td>
+                  <td className="border p-2">{report.patient_name}</td>
+                  <td className="border p-2">{report.patient_age}</td>
                   <td className="border p-2">{report.doctor_name}</td>
                   <td className="border p-2">{report.department}</td>
                   <td className="border p-2">

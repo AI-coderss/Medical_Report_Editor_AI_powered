@@ -58,6 +58,23 @@ const DownloadPDF = ({ report }) => {
 
     // Simulate processing delay (optional, for realism)
     await new Promise((resolve) => setTimeout(resolve, 500));
+    // Stamp image settings
+    const stampImg = "/logo.png"; // Update path if needed
+    const stampWidth = 40;
+    const stampHeight = 40;
+
+    // Check if there's space for the stamp; if not, add new page
+    if (y + stampHeight + 10 > pageHeight - 40) {
+      doc.addPage();
+      addHeaderAndFooter();
+      y = 50;
+    }
+
+    // Place the stamp at bottom-right corner above footer
+    const stampX = pageWidth - margin - stampWidth;
+    const stampY = pageHeight - 40 - stampHeight - 10; // 40 = footer height
+
+    doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
 
     doc.save(`Compiled_Report_${report.patient_name}.pdf`);
     setLoading(false); // Hide loader

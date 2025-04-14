@@ -40,40 +40,46 @@ const UserList = () => {
       setUsers([]); // Set to empty array in case of error
     }
   };
-
   const handleDelete = async (id) => {
-    // Show SweetAlert confirmation
     Swal.fire({
       title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      text: "You want to toggle this user's status?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, do it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const token = Cookies.get("token"); // Fetch JWT from cookies
+          const token = Cookies.get("token");
 
-          await fetch(
+          const response = await fetch(
             `https://medical-report-editor-ai-powered-backend.onrender.com/delete/${id}`,
             {
               method: "DELETE",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`, // Attach JWT token in the header
+                Authorization: `Bearer ${token}`,
               },
             }
           );
 
-          setUsers(users.filter((user) => user.id !== id));
+          if (response.ok) {
+            const updatedUsers = users.map((user) =>
+              user.id === id
+                ? { ...user, status: user.status === 1 ? 0 : 1 }
+                : user
+            );
+            setUsers(updatedUsers);
 
-          // Show success alert
-          Swal.fire("Deleted!", "User has been deleted.", "success");
+            Swal.fire("Updated!", "User status has been changed.", "success");
+          } else {
+            Swal.fire("Error!", "Failed to update user status.", "error");
+          }
         } catch (error) {
-          console.error("Error deleting user:", error);
-          Swal.fire("Error!", "Failed to delete user.", "error");
+          console.error("Error toggling user status:", error);
+          Swal.fire("Error!", "Something went wrong.", "error");
         }
       }
     });
@@ -113,6 +119,7 @@ const UserList = () => {
             <th className="border p-2">First Name</th>
             <th className="border p-2">Last Name</th>
             <th className="border p-2">Email</th>
+            <th className="border p-2">Status</th>
             <th className="border p-2">Actions</th>
           </tr>
         </thead>
@@ -125,11 +132,14 @@ const UserList = () => {
                 <td className="border p-2">{user.last_name}</td>
                 <td className="border p-2">{user.email}</td>
                 <td className="border p-2">
+                  {user.status === 1 ? "Active" : "Blocked"}
+                </td>
+                <td className="border p-2">
                   <button
                     onClick={() => handleDelete(user.id)}
                     className="bg-red-500 text-white px-3 py-1 rounded"
                   >
-                    Delete
+                    {user.status === 1 ? "Block" : "Activate"}
                   </button>
                 </td>
               </tr>

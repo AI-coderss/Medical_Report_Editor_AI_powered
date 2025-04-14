@@ -57,6 +57,9 @@ button.bg-red-500 {
   border-radius: 30px;
   width: 30%;
 }
+.datepick {
+  width: 50% !important;
+}
 .overflow-x-auto {
   margin-top: -1px;
 }

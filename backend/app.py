@@ -4,7 +4,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import fitz
-from mongoengine import connect, Document, StringField, FileField, ValidationError, ListField ,DateTimeField
+from mongoengine import connect, Document, StringField, FileField, ValidationError, ListField ,DateTimeField ,IntField
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, create_refresh_token
 import re
 import bcrypt
@@ -68,9 +68,8 @@ class User(Document):
     email = StringField(required=True, unique=True)
     password = StringField(required=True)
     department = StringField()
+    status = IntField(default=1)
     
-    
-
 # Ensure the upload folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -190,9 +189,9 @@ def login():
     # Fetch the user by email
     user = User.objects(email=email).first()
 
-    # Validate user existence and check password
-    if not user or not check_password(password, user.password):
-        return jsonify({'error': 'Invalid email or password'}), 401
+    # Validate user existence, status, and password
+    if not user or user.status != 1 or not check_password(password, user.password):
+        return jsonify({'error': 'Invalid email, password, or inactive account'}), 401
 
     # Create JWT tokens
     access_token = create_access_token(identity=str(user.id))
@@ -221,7 +220,6 @@ def login():
     )
 
     return response
-   
 
 # Get Specific User
 
@@ -247,7 +245,8 @@ def get_users():
         'id': str(user.id),
         'first_name': user.firstName,
         'last_name': user.lastName,
-        'email': user.email
+        'email': user.email,
+        'status':user.status
     } for user in users])
     
 # Helper function to check allowed file extensions
@@ -318,19 +317,18 @@ def delete_user(user_id):
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Delete the user
-        user.delete()
+        # Toggle the status
+        user.status = 0 if user.status == 1 else 1
+        user.save()
 
         # Return success response
         return jsonify({
-            'message': 'User deleted successfully',
+            'message': f"User status updated to {user.status}",
             'id': user_id
         }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 # @app.route("/api/medical-report", methods=["POST"])
 # @jwt_required()
 # def create_medical_report():
@@ -656,7 +654,8 @@ def all_editor_report():
         data_list.append({
             "id":str(item.id),
             "result": item.result,
-            "patient_name": item.patient_name,       # ✅ added
+            "patient_name": item.patient_name,
+            "patient_age": item.patient_age,       
             "fileNumber": item.fileNumber,
             "generatedBy":item.generatedBy,
             "doctor_name": item.doctor_name,
@@ -872,7 +871,7 @@ def doctor_report():
         report_list.append({
             "id": str(report.id),
             "patient_name": report.patient_name,
-            "age": report.age,
+            "patient_age": report.age,
             "fileName":report.fileNumber,
             "personal_history": report.personal_history,
             "chief_complaint": report.chief_complaint,
