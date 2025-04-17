@@ -5,13 +5,23 @@ import "../styles/setting.css";
 const Setting = () => {
   const [doctorName, setDoctorName] = useState("");
   const [department, setDepartment] = useState("");
+  const [departments, setDepartments] = useState([]);
 
+  // Load stored values
   useEffect(() => {
     const storedDoctorName = localStorage.getItem("doctorName");
     const storedDepartment = localStorage.getItem("department");
 
     if (storedDoctorName) setDoctorName(storedDoctorName);
     if (storedDepartment) setDepartment(storedDepartment);
+  }, []);
+
+  // Load departments from JSON file in public folder
+  useEffect(() => {
+    fetch("/departments.json")
+      .then((res) => res.json())
+      .then((data) => setDepartments(data))
+      .catch((err) => console.error("Failed to fetch departments:", err));
   }, []);
 
   const handleSubmit = (e) => {
@@ -47,19 +57,26 @@ const Setting = () => {
               />
             </div>
 
-            {/* Department Field */}
+            {/* Department Field as Dynamic Select */}
             <div className="col-md-6">
               <label htmlFor="department" className="form-label fw-semibold">
                 Department
               </label>
-              <input
-                type="text"
-                className="form-control form-control-lg rounded-3"
+              <select
+                className="form-select form-select-lg rounded-3"
                 id="department"
-                placeholder="Enter department"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-              />
+              >
+                <option value="" disabled hidden>
+                  Select Department
+                </option>
+                {departments.map((dept, index) => (
+                  <option key={index} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

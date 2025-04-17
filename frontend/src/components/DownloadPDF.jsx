@@ -59,7 +59,7 @@ const DownloadPDF = ({ report }) => {
     // Simulate processing delay (optional, for realism)
     await new Promise((resolve) => setTimeout(resolve, 500));
     // Stamp image settings
-    const stampImg = "/logo.png"; // Update path if needed
+    const stampImg = "/stamp.png"; // Update path if needed
     const stampWidth = 40;
     const stampHeight = 40;
 

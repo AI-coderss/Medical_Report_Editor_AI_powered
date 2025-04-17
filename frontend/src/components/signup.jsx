@@ -18,14 +18,16 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const departments = [
-    "Cardiology",
-    "Neurology",
-    "Orthopedics",
-    "Pediatrics",
-    "Radiology",
-    "General Surgery",
-  ];
+  const [departments, setDepartments] = useState([]);
+
+  React.useEffect(() => {
+    fetch("/departments.json")
+      .then((res) => res.json())
+      .then((data) => setDepartments(data))
+      .catch((err) => {
+        console.error("Failed to load departments:", err);
+      });
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -151,13 +153,16 @@ const Signup = () => {
             onChange={handleChange}
             className="w-full p-2 border rounded mb-2"
           >
-            <option value="">Select Department</option>
+            <option value="" disabled>
+              Select Department
+            </option>
             {departments.map((dept, index) => (
               <option key={index} value={dept}>
                 {dept}
               </option>
             ))}
           </select>
+
           {errors.department && (
             <p className="text-red-500 text-sm">{errors.department}</p>
           )}

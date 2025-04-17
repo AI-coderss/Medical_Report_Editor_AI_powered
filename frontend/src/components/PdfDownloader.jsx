@@ -90,7 +90,7 @@ const PDFDownloader = ({ content, fileName }) => {
     // Simulate delay (optional)
     await new Promise((resolve) => setTimeout(resolve, 400));
     // Stamp image
-    const stampImg = "/logo.png"; // Replace with your actual stamp path
+    const stampImg = "/stamp.png"; // Replace with your actual stamp path
     const stampWidth = 40;
     const stampHeight = 40;
 
