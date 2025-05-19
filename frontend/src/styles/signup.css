@@ -25,7 +25,7 @@
   font-weight: 700;
 }
 .logo-img img {
-  width: 58%;
+  width: 20%;
   margin: 0 auto;
   padding-bottom: 20px;
 }
@@ -41,20 +41,25 @@
   color: #ae2323;
 }
 .login-form {
-  transform: translateY(30%);
-  border-top: 5px solid #007bff;
+  /* transform: translateY(30%); */
   box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
-  width: 40%;
-  margin: 100px auto;
+  /* width: 40%; */
+  /* margin: 100px auto; */
   padding: 20px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
 }
 .login-form input {
-  padding: 14px 12px;
+  padding: 11px 10px;
   font-size: 16px;
+  border: 1px solid #80808045;
 }
 .eye-btn1 {
   position: absolute;
-  top: 12px;
+  top: 6px;
   background: transparent;
   color: black;
   right: 0;

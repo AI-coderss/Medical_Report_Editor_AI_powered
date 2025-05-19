@@ -62,7 +62,7 @@ const Login = () => {
       </div>
       <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
       {message && <p className="mb-4 text-red-500">{message}</p>}
-      <form onSubmit={handleSubmit}>
+      <form className="form-w" onSubmit={handleSubmit}>
         <input
           type="text"
           name="email"

@@ -90,7 +90,9 @@ function ReportEditor() {
   const [patientName, setPatientName] = useState("");
   const [patientAge, setPatientAge] = useState("");
   const [patientFileNumber, setpatientFileNumber] = useState("");
+  const [downloadAfterEnhance, setDownloadAfterEnhance] = useState(false);
 
+  const pdfRef = useRef();
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
     const savedContent = localStorage.getItem(REPORT_STORAGE_KEY);
@@ -116,6 +118,19 @@ function ReportEditor() {
     localStorage.setItem(FORMATTED_STORAGE_KEY, formattedMarkdown);
     localStorage.setItem(MISTAKES_STORAGE_KEY, JSON.stringify(mistakes));
   }, [editorState, formattedMarkdown, mistakes]);
+
+  useEffect(() => {
+    if (
+      downloadAfterEnhance &&
+      formattedMarkdown &&
+      formattedMarkdown.trim() !== "" &&
+      pdfRef.current
+    ) {
+      pdfRef.current.download();
+      setDownloadAfterEnhance(false); // Reset flag after download
+    }
+  }, [formattedMarkdown, downloadAfterEnhance]);
+
   // ✅ Save signature
   const saveSignature = () => {
     if (sigCanvas.current) {
@@ -242,6 +257,10 @@ function ReportEditor() {
           EditorState.createWithContent(correctedContent, decorator)
         );
         setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
+        setDownloadAfterEnhance(true);
+        // if (pdfRef.current) {
+        //   pdfRef.current.download();
+        // }
       } else {
         alert("Error: " + correctData.error);
         setLoading(false);
@@ -341,9 +360,9 @@ function ReportEditor() {
           </button>
           {/* ✅ Download Button */}
           <PDFDownloader
+            ref={pdfRef}
             content={formattedMarkdown}
             fileName="Medical_Report.pdf"
-            signature={signature}
           >
             <FaDownload />
           </PDFDownloader>
@@ -377,14 +396,14 @@ function ReportEditor() {
         {/* Top Heading */}
 
         {/* Form Row: Name & Age */}
-        <div className="max-w-4xl mx-auto mt-10 p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl  space-y-10 ">
+        <div className="max-w-4xl mx-auto mt-5 p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl  space-y-10 ">
           {/* Title */}
-          <h2 className="text-3xl font-bold text-center text-gray-800 tracking-tight">
-            Patient Information
+          <h2 className="text-2xl font-bold text-center text-gray-800 tracking-tight ">
+            Patient <span>Information</span>
           </h2>
 
           {/* Patient Details: 2 Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 report-box ">
             <div className="flex flex-col">
               <label className="Small-medium text-gray-700 mb-2">
                 Patient Name
@@ -433,7 +452,7 @@ function ReportEditor() {
             {readyToRender &&
               (typeof formattedMarkdown === "string" &&
               formattedMarkdown.trim().length > 0 ? (
-                <div className="prose max-w-none border border-gray-200 p-4 rounded-xl bg-white shadow-sm">
+                <div className="prose max-w-none  p-4  bg-white">
                   <SafeMarkdown content={formattedMarkdown} />
                 </div>
               ) : (

@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { jsPDF } from "jspdf";
 
-const PDFDownloader = ({ content, fileName }) => {
+const formatPDFText = (rawText) => {
+  if (!rawText) return "";
+
+  return rawText
+    .replace(/^##\s*(.+)/gm, "**$1**")
+    .replace(/\n•/g, "\n-")
+    .replace(/\r/g, "")
+    .trim();
+};
+
+const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
   const [loading, setLoading] = useState(false);
 
   const handleDownloadPDF = async () => {
-    setLoading(true); // Start loading
-
+    setLoading(true);
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -37,7 +46,8 @@ const PDFDownloader = ({ content, fileName }) => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
 
-    const lines = content.split("\n");
+    const formattedContent = formatPDFText(content);
+    const lines = formattedContent.split("\n");
 
     for (const line of lines) {
       if (y + lineHeight > pageHeight - footerHeight) {
@@ -47,13 +57,11 @@ const PDFDownloader = ({ content, fileName }) => {
       }
 
       const trimmed = line.trim();
-
       if (!trimmed) {
         y += lineHeight;
         continue;
       }
 
-      // Bold detection
       const boldMatch = /^\*\*(.*?)\*\*$/.exec(trimmed);
       if (boldMatch) {
         doc.setFont("helvetica", "bold");
@@ -67,7 +75,6 @@ const PDFDownloader = ({ content, fileName }) => {
         continue;
       }
 
-      // Bullet points
       let text = trimmed;
       let prefix = "";
       if (text.startsWith("- ")) {
@@ -87,29 +94,26 @@ const PDFDownloader = ({ content, fileName }) => {
       }
     }
 
-    // Simulate delay (optional)
     await new Promise((resolve) => setTimeout(resolve, 400));
-    // Stamp image
-    const stampImg = "/stamp.png"; // Replace with your actual stamp path
+    const stampImg = "/stamp.png";
     const stampWidth = 40;
     const stampHeight = 40;
 
-    // Check if we need a new page to fit the stamp
     if (y + stampHeight + 10 > pageHeight - footerHeight) {
       doc.addPage();
       addHeaderAndFooter();
       y = headerHeight + 10;
     }
 
-    // Add stamp at the bottom-right corner (adjust x/y if needed)
-    const stampX = pageWidth - margin - stampWidth;
-    const stampY = pageHeight - footerHeight - stampHeight - 10;
-
-    doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
-
+    doc.addImage(stampImg, "PNG", margin, y, stampWidth, stampHeight);
     doc.save(fileName || "report.pdf");
-    setLoading(false); // Done loading
+    setLoading(false);
   };
+
+  // Expose the method to the parent
+  useImperativeHandle(ref, () => ({
+    download: handleDownloadPDF,
+  }));
 
   return (
     <button
@@ -121,9 +125,9 @@ const PDFDownloader = ({ content, fileName }) => {
       }`}
       disabled={loading}
     >
-      {loading ? "Generating PDF..." : "Download PDF"}
+      {loading ? "Generating PDF..." : "download PDF"}
     </button>
   );
-};
+});
 
 export default PDFDownloader;

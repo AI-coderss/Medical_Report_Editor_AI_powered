@@ -122,21 +122,35 @@ button:disabled {
   flex-direction: column;
 }
 
-label {
-  font-weight: bold;
+.report-box label {
+  font-weight: 600;
   margin-top: 10px;
+  font-size: 15px;
 }
-
+.tracking-tight {
+  margin-bottom: 18px;
+}
+.prose p {
+  padding: 8px 0;
+}
 /* Restored Field Sizes to Fit Data */
-input,
+.report-box input,
 select {
   width: 100%;
-  padding: 14px 12px !important;
-  margin-top: 5px;
-  border: 1px solid #45474c !important;
+  padding: 8px 8px !important;
+  /* border: 1px solid #45474c !important; */
   border-radius: 4px;
-  color: #220404 !important;
   margin-bottom: 6px;
+  font-size: 15px;
+
+  /* color: #ffff !important; */
+}
+.form-w {
+  width: 30%;
+  margin-top: 12px;
+}
+.login-form input {
+  margin-bottom: 17px;
 }
 textarea {
   width: 100%;

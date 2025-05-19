@@ -2,6 +2,16 @@ import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import Cookies from "js-cookie";
 
+const formatReportForPDF = (rawText) => {
+  if (!rawText) return "";
+
+  return rawText
+    .replace(/^##\s*(.+)/gm, "**$1**") // Convert headings to bold markdown
+    .replace(/\n•/g, "\n-") // Normalize bullets
+    .replace(/\r/g, "") // Remove carriage returns
+    .trim();
+};
+
 const DownloadPDF = ({ report }) => {
   const [loading, setLoading] = useState(false);
 
@@ -30,8 +40,28 @@ const DownloadPDF = ({ report }) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
 
-    const textToSplit = report.compiled_report || report.result;
-    const splitText = doc.splitTextToSize(textToSplit, contentWidth);
+    const rawText = report.compiled_report || report.result;
+    const formattedText = formatReportForPDF(rawText);
+    const splitText = doc.splitTextToSize(formattedText, contentWidth);
+
+    // splitText.forEach((line) => {
+    //   if (y + 10 > pageHeight - 40) {
+    //     doc.addPage();
+    //     addHeaderAndFooter();
+    //     y = 50;
+    //   }
+
+    //   if (/^\*\*(.*?)\*\*$/.test(line.trim())) {
+    //     const boldText = line.trim().replace(/^\*\*|\*\*$/g, "");
+    //     doc.setFont("helvetica", "bold");
+    //     doc.text(boldText, margin, y);
+    //     doc.setFont("helvetica", "normal");
+    //   } else {
+    //     doc.text(line, margin, y);
+    //   }
+
+    //   y += 7;
+    // });
 
     splitText.forEach((line) => {
       if (y + 10 > pageHeight - 40) {
@@ -40,14 +70,39 @@ const DownloadPDF = ({ report }) => {
         y = 50;
       }
 
-      if (/^\*\*(.*?)\*\*$/.test(line.trim())) {
-        const boldText = line.trim().replace(/^\*\*|\*\*$/g, "");
-        doc.setFont("helvetica", "bold");
-        doc.text(boldText, margin, y);
-        doc.setFont("helvetica", "normal");
-      } else {
-        doc.text(line, margin, y);
+      // Handle bullet points
+      if (line.trim().startsWith("- ")) {
+        line = "• " + line.trim().substring(2);
       }
+
+      // Split line by bold markdown (**) and apply styles
+      const parts = line.split(/(\*\*.*?\*\*)/g); // Capture bold sections
+      let x = margin;
+
+      parts.forEach((part) => {
+        if (!part) return;
+
+        if (part.startsWith("**") && part.endsWith("**")) {
+          doc.setFont("helvetica", "bold");
+          part = part.slice(2, -2);
+        } else {
+          doc.setFont("helvetica", "normal");
+        }
+
+        const partWidth = doc.getTextWidth(part);
+        if (x + partWidth > pageWidth - margin) {
+          y += 7;
+          x = margin;
+          if (y + 10 > pageHeight - 40) {
+            doc.addPage();
+            addHeaderAndFooter();
+            y = 50;
+          }
+        }
+
+        doc.text(part, x, y);
+        x += partWidth;
+      });
 
       y += 7;
     });
@@ -71,8 +126,11 @@ const DownloadPDF = ({ report }) => {
     }
 
     // Place the stamp at bottom-right corner above footer
-    const stampX = pageWidth - margin - stampWidth;
-    const stampY = pageHeight - 40 - stampHeight - 10; // 40 = footer height
+    // const stampX = pageWidth - margin - stampWidth;
+    // const stampY = pageHeight - 40 - stampHeight - 10; // 40 = footer height
+    // Stamp position based on current y
+    const stampX = margin; // Or any x-position you want
+    const stampY = y;
 
     doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
 
