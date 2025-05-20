@@ -151,7 +151,7 @@ const Signup = () => {
             name="department"
             value={formData.department}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-2"
+            className="w-full p-2 border rounded mb-2 select-field"
           >
             <option value="" disabled>
               Select Department

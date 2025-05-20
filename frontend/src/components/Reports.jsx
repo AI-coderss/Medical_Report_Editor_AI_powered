@@ -312,8 +312,10 @@ const MedicalReports = () => {
         )}
       </div>
       {loading ? (
-        <div className="loader" style={{ marginTop: "100px" }}>
-          <Loader />
+        <div className="loader-circle" style={{ top: "90%" }}>
+          <div className="loader" style={{ marginTop: "100px" }}>
+            <Loader />
+          </div>
         </div>
       ) : (
         <div className="overflow-x-auto">

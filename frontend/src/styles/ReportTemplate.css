@@ -5,7 +5,6 @@
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100vh;
   background-color: #f4f4f4; /* Page Background */
   padding-top: 100px; /* Adjusted for Navbar space */
 }
@@ -216,4 +215,59 @@ button {
 
 button:hover {
   background: #05c0f9;
+}
+input {
+  border: 1px solid #ccc;
+  padding: 7px 0;
+  border-radius: 4px;
+  margin: 5px 0;
+  padding: 6px;
+}
+label {
+  font-weight: 600;
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+#doctorName {
+  border: 1px solid #80808042;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 5px;
+  margin: 5px 0;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+.loader-circle {
+  position: absolute;
+  top: 35%;
+  left: 40%;
+}
+.report-box input,
+select {
+  width: 100%;
+  padding: 8px 8px !important;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 15px;
+  border: 1px solid #80808042;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 5px;
+  margin: 5px 0;
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+.setting-top button {
+  width: 100%;
+  margin-top: 8px;
+}
+.compiled-report-container {
+  margin: 23px 0px;
+  text-align: center;
+  width: 100%;
+  background-color: #6691f11c;
+  padding: 14px 10px;
+  border-radius: 10px;
+}
+.compiled-report-container h3 {
+  font-weight: 600;
 }

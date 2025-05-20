@@ -168,7 +168,9 @@ function ReportTemplate() {
 
   return (
     <div className="report-container">
-      {loading && <Loader isLoading={loading} />}
+      <div className="loader-circle">
+        {loading && <Loader isLoading={loading} />}
+      </div>
       <div className="toolbar">
         <h2>Medical Report Editor</h2>
         <button

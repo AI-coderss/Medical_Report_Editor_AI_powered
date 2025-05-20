@@ -125,7 +125,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
       }`}
       disabled={loading}
     >
-      {loading ? "Generating PDF..." : "download PDF"}
+      {loading ? "Generating PDF..." : "Download PDF"}
     </button>
   );
 });
