@@ -4,6 +4,7 @@ import "../styles/ReportTemplate.css";
 import PDFDownloader from "./PdfDownloader";
 import Cookies from "js-cookie";
 import Loader from "../components/Loader";
+import { marked } from "marked";
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
@@ -288,7 +289,7 @@ function ReportTemplate() {
             <>
               <div
                 className="compiled-report"
-                dangerouslySetInnerHTML={{ __html: compiledReport }}
+                dangerouslySetInnerHTML={{ __html: marked(compiledReport) }}
               />
               <PDFDownloader
                 content={compiledReport}

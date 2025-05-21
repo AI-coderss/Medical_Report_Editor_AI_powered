@@ -182,14 +182,26 @@
 .space-top {
   width: 60%;
   padding: 30px 20px;
-  margin-top: 125px;
+  margin-top: 107px;
   margin-bottom: 20px;
+  background: white;
+  width: 800px;
+  min-height: 1200px;
+  padding: 30px;
+  /* margin-top: 20px; */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  font-family: "Arial", sans-serif;
+  line-height: 1.6;
+  /* height: 100vh; */
 }
 .report {
   margin: 8px 0;
 }
-.public-DraftStyleDefault-block.public-DraftStyleDefault-ltr {
-  padding: 0px 15px;
-  height: 338px;
-  overflow-y: scroll;
+
+.textareaa {
+  margin: 10px 0;
+}
+.medical {
+  padding: 0 14px;
 }

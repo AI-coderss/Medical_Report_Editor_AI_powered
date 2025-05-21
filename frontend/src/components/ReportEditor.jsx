@@ -444,8 +444,8 @@ function ReportEditor() {
           </div>
 
           {/* Report Section */}
-          <div className="space-y-4">
-            <h3 className="Small-medium font-bold text-gray-800 pb-2 report">
+          <div className="space-y-4 border h-screen rounded mt-3 border-gray-300 textareaa">
+            <h3 className="Small-medium font-bold text-gray-800 pb-2 report text-center my-[4px]">
               Medical Report
             </h3>
 
@@ -456,7 +456,7 @@ function ReportEditor() {
                   <SafeMarkdown content={formattedMarkdown} />
                 </div>
               ) : (
-                <div className="border border-gray-300 rounded-xl p-4 shadow-sm bg-white">
+                <div className="rounded-xl p-4 bg-white medical">
                   <Editor
                     editorState={editorState}
                     onChange={handleEditorChange}
