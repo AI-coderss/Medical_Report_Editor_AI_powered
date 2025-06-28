@@ -55,7 +55,8 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 connect(db="medical_reports_db", host=MONGO_URI)
 
-# Get OpenAI API key from .env file
+# Get
+# OpenAI API key from .env file
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("OpenAI API key not found. Please set it in the .env file.")
