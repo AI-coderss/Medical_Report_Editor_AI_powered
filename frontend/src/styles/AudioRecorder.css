@@ -1,0 +1,122 @@
+.audio-recorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background-color: #f8f9fa; /* Light neutral background */
+  border-radius: 8px; /* Rounded corners */
+}
+
+canvas {
+  height: 90px;
+  width: 100%;
+}
+
+h3 {
+  font-size: 1.2rem; /* Slightly smaller heading */
+  margin-bottom: 20px;
+  color: #333; /* Neutral text color */
+}
+
+.recorder-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Two buttons per row */
+  gap: 10px; /* Space between buttons */
+  margin-top: 14px;
+  width: 100%; /* Take full width */
+  max-width: 400px; /* Reduce the container's width */
+}
+
+/* Premium Access Button Style for Recorder Buttons */
+button {
+  position: relative;
+  padding: 0.8rem 1.5rem; /* Default padding for larger screens */
+  font-size: 0.9rem; /* Default font size */
+  color: white;
+  background: linear-gradient(
+    45deg,
+    #007bff,
+    #4f46e5
+  ); /* Gradient background */
+  border: none;
+  border-radius: 6px; /* Slightly smaller radius */
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease; /* Smooth transitions */
+}
+
+button .shine-content {
+  position: relative;
+  z-index: 1;
+}
+
+button::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: rotate(45deg) translateY(-100%);
+  transition: transform 0.5s ease; /* Shine animation */
+}
+
+button:hover::before {
+  transform: rotate(45deg) translateY(100%);
+}
+
+button:hover {
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.4); /* Slightly reduced glow effect */
+}
+
+button:disabled {
+  background-color: #d1d5db;
+  color: #000;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: linear-gradient(45deg, #e3e3e3, hsl(210deg 16.67% 97.65%));
+}
+.audio-player {
+  margin-top: 20px;
+  width: 100%;
+  outline: none;
+  border-radius: 6px; /* Match button radius */
+  background-color: #e0e0e0;
+  padding: 10px;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1),
+    inset 0px 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Media Query for Mobile Screens */
+@media (max-width: 768px) {
+  .audio-recorder {
+    position: fixed;
+    top: 75px; /* Below the Navbar */
+    left: 0;
+    width: 100%;
+    padding: 8px; /* Reduced padding for smaller screens */
+    height: 160px; /* Reduced height */
+    background-color: #f8f9fa; /* Maintain light background */
+  }
+
+  .recorder-buttons {
+    grid-template-columns: repeat(2, 1fr); /* Two buttons per row */
+    gap: 6px; /* Reduced gap for smaller screens */
+  }
+
+  button {
+    padding: 0.5rem 0.9rem; /* Smaller button size */
+    font-size: 0.8rem; /* Reduced font size */
+    margin-right: 0.6rem;
+  }
+
+  .audio-player {
+    margin-top: 10px;
+  }
+}

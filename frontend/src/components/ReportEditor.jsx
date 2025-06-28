@@ -10,8 +10,9 @@ import {
   convertToRaw,
 } from "draft-js";
 import "draft-js/dist/Draft.css";
-import ReactMarkdown from "react-markdown"; // ✅ ReactMarkdown is now correctly used!
+import ReactMarkdown from "react-markdown";
 import "../styles/ReportEditor.css";
+import AudioRecorderForReportEditor from "./AudioRecorderForReportEditor";
 import {
   FormatBold,
   FormatItalic,
@@ -223,13 +224,14 @@ function ReportEditor() {
     }
 
     setLoading(true);
+    setFormattedMarkdown(""); // Clear old text
+    setEditorState(EditorState.createEmpty(decorator)); // Optional: clear editor
 
     try {
       const token = Cookies.get("token");
 
-      // 1️⃣ Correct the text first (updates editor content)
-      const correctResponse = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text",
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text-stream",
         {
           method: "POST",
           headers: {
@@ -247,50 +249,137 @@ function ReportEditor() {
         }
       );
 
-      const correctData = await correctResponse.json();
-
-      if (correctResponse.ok) {
-        const correctedContent = ContentState.createFromText(
-          correctData.corrected_text
-        );
-        setEditorState(
-          EditorState.createWithContent(correctedContent, decorator)
-        );
-        setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
-        setDownloadAfterEnhance(true);
-        // if (pdfRef.current) {
-        //   pdfRef.current.download();
-        // }
-      } else {
-        alert("Error: " + correctData.error);
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Something went wrong");
       }
 
-      // 2️⃣ Then detect mistakes (show in sidebar)
+      // 🔄 STREAM the response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        // Live update markdown preview
+        setFormattedMarkdown((prev) => prev + chunk);
+      }
+
+      // Final update to the editor content
+      const correctedContent = ContentState.createFromText(fullText);
+      setEditorState(
+        EditorState.createWithContent(correctedContent, decorator)
+      );
+
+      setDownloadAfterEnhance(true);
+
+      // 🧠 Mistake detection (if needed)
       const mistakeResponse = await fetch(
         "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: correctData.corrected_text }),
+          body: JSON.stringify({ text: fullText }),
         }
       );
 
       const mistakeData = await mistakeResponse.json();
-
       if (mistakeResponse.ok) {
         setMistakes(mistakeData.highlighted_text);
         setSidebarOpen(true);
       } else {
-        alert("Error: " + mistakeData.error);
+        alert("Mistake detection failed: " + mistakeData.error);
       }
     } catch (error) {
-      alert("Failed to connect to the backend.");
+      alert("Error: " + error.message);
     }
 
     setLoading(false);
   };
+
+  // const handleEditReport = async () => {
+  //   const content = editorState.getCurrentContent();
+  //   const plainText = content.getPlainText();
+
+  //   if (!plainText.trim()) {
+  //     alert("The document is empty. Please write something.");
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const token = Cookies.get("token");
+
+  //     // 1️⃣ Correct the text first (updates editor content)
+  //     const correctResponse = await fetch(
+  //       "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text",
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({
+  //           text: plainText,
+  //           patient_name: patientName,
+  //           patient_age: patientAge,
+  //           patient_fileNumber: patientFileNumber,
+  //           doctor_name: doctorName,
+  //           department: department,
+  //         }),
+  //       }
+  //     );
+
+  //     const correctData = await correctResponse.json();
+
+  //     if (correctResponse.ok) {
+  //       const correctedContent = ContentState.createFromText(
+  //         correctData.corrected_text
+  //       );
+  //       setEditorState(
+  //         EditorState.createWithContent(correctedContent, decorator)
+  //       );
+  //       setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
+  //       setDownloadAfterEnhance(true);
+  //       // if (pdfRef.current) {
+  //       //   pdfRef.current.download();
+  //       // }
+  //     } else {
+  //       alert("Error: " + correctData.error);
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     // 2️⃣ Then detect mistakes (show in sidebar)
+  //     const mistakeResponse = await fetch(
+  //       "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ text: correctData.corrected_text }),
+  //       }
+  //     );
+
+  //     const mistakeData = await mistakeResponse.json();
+
+  //     if (mistakeResponse.ok) {
+  //       setMistakes(mistakeData.highlighted_text);
+  //       setSidebarOpen(true);
+  //     } else {
+  //       alert("Error: " + mistakeData.error);
+  //     }
+  //   } catch (error) {
+  //     alert("Failed to connect to the backend.");
+  //   }
+
+  //   setLoading(false);
+  // };
 
   return (
     <div className="editor-container">
@@ -401,7 +490,12 @@ function ReportEditor() {
           <h2 className="text-2xl font-bold text-center text-gray-800 tracking-tight ">
             Patient <span>Information</span>
           </h2>
-
+          <AudioRecorderForReportEditor
+            setPatientName={setPatientName}
+            setPatientAge={setPatientAge}
+            setPatientFileNumber={setpatientFileNumber}
+            setMedicalReportText={setFormattedMarkdown}
+          />
           {/* Patient Details: 2 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 report-box ">
             <div className="flex flex-col">

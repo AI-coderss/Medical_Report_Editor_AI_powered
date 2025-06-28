@@ -108,7 +108,7 @@ button:disabled {
 /* A4 Canvas for Form */
 .report-form-container {
   background: white;
-  width: 794px; /* A4 width */
+  width: 100%; /* A4 width */
   /*min-height: 1400px;*/ /* Adjusted height */
   padding: 30px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
@@ -181,16 +181,15 @@ textarea[name="doctorSignature"] {
 
 /* A4 Report Canvas */
 .compiled-report {
-  width: 794px;
+  width: 100%;
   min-height: 1200px;
-  background: white;
+  background: #fbfcfd;
   padding: 30px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   margin-top: 30px; /* Reduced gap */
   border-radius: 5px;
   white-space: pre-wrap;
   font-family: "Courier New", monospace;
-  border-left: 5px solid #007bff;
 }
 .signature-container {
   display: flex;
@@ -205,7 +204,7 @@ textarea[name="doctorSignature"] {
 }
 
 button {
-  padding: 5px 10px;
+  padding: 6px 10px;
   background: #01acdf;
   color: white;
   border: none;
@@ -241,6 +240,7 @@ label {
   position: absolute;
   top: 35%;
   left: 40%;
+  z-index: 9999;
 }
 .report-box input,
 select {
@@ -261,7 +261,7 @@ select {
   margin-top: 8px;
 }
 .compiled-report-container {
-  margin: 23px 0px;
+  margin: 0px;
   text-align: center;
   width: 100%;
   background-color: #6691f11c;
@@ -270,4 +270,47 @@ select {
 }
 .compiled-report-container h3 {
   font-weight: 600;
+  margin-bottom: 0px;
+}
+.flex_sec {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+  background: #f0f0f0;
+  padding: 30px 20px 10px;
+}
+.one {
+  flex: 0 0 49% !important;
+  width: 48%;
+}
+.audio-recorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  width: 100%;
+  justify-content: center;
+  margin: 0 auto;
+}
+h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+.hidden-scroll::-webkit-scrollbar {
+  display: none;
+}
+.report-detail {
+  position: sticky;
+  height: 75vh;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  z-index: 1;
+}
+.one.report-detail.report-generated {
+  height: 100%;
 }

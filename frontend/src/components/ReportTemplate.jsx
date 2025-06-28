@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import SignatureCanvas from "react-signature-canvas";
+import React, { useState } from "react";
 import "../styles/ReportTemplate.css";
+import AudioRecorder from "./AudioRecorder";
 import PDFDownloader from "./PdfDownloader";
 import Cookies from "js-cookie";
 import Loader from "../components/Loader";
@@ -18,130 +18,84 @@ function ReportTemplate() {
     pastHistory: "",
     familyHistory: "",
     systemReview: "",
-    // doctorSignature: "",
   });
 
   const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
   const [loading, setLoading] = useState(false);
-  // const [signatureBase64, setSignatureBase64] = useState("");
-  // const signatureRef = useRef(null);
+
   const doctorName = localStorage.getItem("doctorName") || "Dr.Test";
   const department = localStorage.getItem("department") || "Department-Test";
+
   const validateForm = () => {
     let newErrors = {};
-
     if (formData.age && isNaN(formData.age)) {
       newErrors.age = "Age must be a valid number.";
     }
-    // if (signatureRef.current && signatureRef.current.isEmpty()) {
-    //   newErrors.doctorSignature = "Signature is required.";
-    // }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
     if (errors[name]) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [name]: undefined,
-      }));
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
-  };
-
-  const handleClearSignature = () => {
-    // signatureRef.current.clear();
-    setFormData((prevData) => ({
-      ...prevData,
-      doctorSignature: "",
-    }));
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      doctorSignature: undefined,
-    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     const formDataToSend = new FormData();
-
-    // Append form data except the doctorSignature
     Object.keys(formData).forEach((key) => {
-      if (key !== "doctorSignature") {
-        formDataToSend.append(key, formData[key]);
-      }
+      formDataToSend.append(key, formData[key]);
     });
-    formDataToSend.append(
-      "doctor_name",
-      localStorage.getItem("doctorName") || "Dr.Test"
-    );
-    formDataToSend.append(
-      "department",
-      localStorage.getItem("department") || "Department-Test"
-    );
-    // Handle the signature image
-    // if (signatureRef.current) {
-    //   const signatureDataURL = signatureRef.current.toDataURL("image/png");
-    //   const blob = await (await fetch(signatureDataURL)).blob();
-    //   formDataToSend.append("doctorSignature", blob, "signature.png");
-    // }
-
-    // if (signatureRef.current && !signatureRef.current.isEmpty()) {
-    //   const signatureDataURL = signatureRef.current.toDataURL("image/png");
-    //   setSignatureBase64(signatureDataURL); // Update state
-    // }
+    formDataToSend.append("doctor_name", doctorName);
+    formDataToSend.append("department", department);
 
     setLoading(true);
+    setCompiledReport(""); // Clear previous report
 
     try {
       const token = Cookies.get("token");
-
-      // Request to the second API
-      const apiTwoRequest = fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report",
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report-stream",
         {
           method: "POST",
           body: formDataToSend,
-          headers: {
-            Authorization: `Bearer ${token}`, // Add JWT token in headers
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      // Wait for both API requests to finish
-      const [apiTwoResponse] = await Promise.all([apiTwoRequest]);
-
-      // const signatureDataURL =
-      //   signatureRef.current && !signatureRef.current.isEmpty()
-      //     ? signatureRef.current.toDataURL("image/png")
-      //     : null;
-      // const signatureImageTag = signatureDataURL
-      //   ? `<img src="${signatureDataURL}" alt="Doctor's Signature" style="height:50px; width:auto; display:block; margin-top:10px;" />`
-      //   : "";
-      const apiTwoData = await apiTwoResponse.json();
-      if (apiTwoResponse.ok) {
-        setCompiledReport(
-          (prevCompiledReport) =>
-            `${prevCompiledReport}\n${apiTwoData.compiled_report}\n`
-        );
-      } else {
-        alert("Error: " + apiTwoData.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Something went wrong");
       }
+
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+
+        // Update the UI with each chunk
+        setCompiledReport((prev) => prev + chunk);
+      }
+
+      // Optional: Do something with the complete report
+      console.log("Complete report:", fullText);
     } catch (error) {
       setErrors((prevErrors) => ({
         ...prevErrors,
-        general: "Failed to connect to the backend.",
+        general: error.message || "Failed to connect to the backend.",
       }));
     }
 
@@ -160,11 +114,9 @@ function ReportTemplate() {
       pastHistory: "",
       familyHistory: "",
       systemReview: "",
-      doctorSignature: "",
     });
     setCompiledReport("");
     setErrors({});
-    // if (signatureRef.current) signatureRef.current.clear();
   };
 
   return (
@@ -185,123 +137,91 @@ function ReportTemplate() {
           Clear
         </button>
       </div>
-
-      <div className="report-layout">
-        <div className="report-form-container">
-          <form className="report-form">
-            <label>Patient Name:</label>
-            <input
-              type="text"
-              name="patientName"
-              value={formData.patientName}
-              onChange={handleChange}
-            />
-
-            <label>Age:</label>
-            <input
-              type="text"
-              name="age"
-              value={formData.age}
-              onChange={handleChange}
-            />
-            <label>Patient File Number:</label>
-            <input
-              type="text"
-              name="fileNumber"
-              value={formData.fileNumber}
-              onChange={handleChange}
-            />
-            <label>Chief Complaint:</label>
-            <textarea
-              name="chiefComplaint"
-              value={formData.chiefComplaint}
-              onChange={handleChange}
-            />
-
-            <label>Present Illness:</label>
-            <textarea
-              name="presentIllness"
-              value={formData.presentIllness}
-              onChange={handleChange}
-            />
-
-            <label>Medical History:</label>
-            <textarea
-              name="medicalHistory"
-              value={formData.medicalHistory}
-              onChange={handleChange}
-            />
-
-            <label>Past History:</label>
-            <textarea
-              name="pastHistory"
-              value={formData.pastHistory}
-              onChange={handleChange}
-            />
-
-            <label>Family History:</label>
-            <textarea
-              name="familyHistory"
-              value={formData.familyHistory}
-              onChange={handleChange}
-            />
-
-            <label>Personal History:</label>
-            <textarea
-              name="personalHistory"
-              value={formData.personalHistory}
-              onChange={handleChange}
-            />
-
-            <label>System Review:</label>
-            <textarea
-              name="systemReview"
-              value={formData.systemReview}
-              onChange={handleChange}
-            />
-
-            {/* <label>Doctor's Signature:</label>
-            <div className="signature-container">
-              <SignatureCanvas
-                ref={signatureRef}
-                penColor="black"
-                canvasProps={{
-                  width: 300,
-                  height: 100,
-                  className: "signature-pad",
-                }}
-              />
-              <button type="button" onClick={handleClearSignature}>
-                Clear Signature
-              </button>
-            </div>
-            {errors.doctorSignature && (
-              <span className="text-red-500 error-message">
-                {errors.doctorSignature}
-              </span>
-            )} */}
-          </form>
+      <div className="flex_sec">
+        <div
+          className={`one report-detail ${
+            compiledReport ? "report-generated" : ""
+          }`}
+        >
+          <AudioRecorder setFormData={setFormData} />
+          <div className="report-form-container">
+            <form className="report-form">
+              {/* Form Fields */}
+              {[
+                "patientName",
+                "age",
+                "fileNumber",
+                "chiefComplaint",
+                "presentIllness",
+                "medicalHistory",
+                "pastHistory",
+                "familyHistory",
+                "personalHistory",
+                "systemReview",
+              ].map((field) => (
+                <React.Fragment key={field}>
+                  <label>{field.replace(/([A-Z])/g, " $1")}:</label>
+                  {field === "chiefComplaint" ||
+                  field === "presentIllness" ||
+                  field === "medicalHistory" ||
+                  field === "pastHistory" ||
+                  field === "familyHistory" ||
+                  field === "personalHistory" ||
+                  field === "systemReview" ? (
+                    <textarea
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </form>
+          </div>
         </div>
 
-        <div className="compiled-report-container">
-          <h3>Compiled Medical Report</h3>
-          {compiledReport ? (
-            <>
-              <div
-                className="compiled-report"
-                dangerouslySetInnerHTML={{ __html: marked(compiledReport) }}
-              />
-              <PDFDownloader
-                content={compiledReport}
-                fileName="Medical_Report.pdf"
-                // signature={signatureBase64}
-              />
-            </>
-          ) : (
-            <p className="empty-report">
-              The report will be displayed here after generation.
-            </p>
-          )}
+        <div className="report-layout one">
+          <div className="compiled-report-container">
+            <h3>Compiled Medical Report</h3>
+            {compiledReport ? (
+              <>
+                <PDFDownloader
+                  content={compiledReport}
+                  fileName="Medical_Report.pdf"
+                />
+                <div className="compiled-report text-justify text-start px-20 pb-4 ">
+                  <div className="w-full mb-4">
+                    <img
+                      src="/head.png"
+                      alt="Header"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <div
+                    dangerouslySetInnerHTML={{ __html: marked(compiledReport) }}
+                  />
+                  <div className="w-full mt-4">
+                    <img
+                      src="/foot.png"
+                      alt="Footer"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="empty-report">
+                The report will be displayed here after generation.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

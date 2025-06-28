@@ -15,13 +15,25 @@ from werkzeug.utils import secure_filename
 import base64
 from werkzeug.utils import secure_filename
 import os
+import tempfile
 from datetime import datetime ,timedelta
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain.vectorstores import Qdrant as QdrantVectorStore
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+import qdrant_client
+from flask import Response, stream_with_context
+from uuid import uuid4
+
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
-
-
 
 # Enable CORS for frontend communication (React running on localhost:3000)
 
@@ -48,6 +60,71 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("OpenAI API key not found. Please set it in the .env file.")
 
+engineeredprompt = """
+You are an expert medical editor with deep knowledge of clinical documentation, medical terminology, and structured reporting.
+
+Use the following **retrieved context** from similar medical documents to guide your edits and enhance the report:
+{context}
+
+Your task is to refine and improve the following medical report while ensuring:
+- Grammatical accuracy
+- Professional tone
+- Adherence to standard medical documentation formats.
+- Show the patient name and age at the top of the report like this:  
+  Patient Name - {patient_name}, Patient Age - {patient_age}
+
+- At the end of the report, add the following line:  
+  This report was electronically signed by Doctor - {doctor_name}, Department - {department}.
+
+**Formatting Instructions:**
+- **The report title should be bold and centered.**
+- **All report section headers (Chief Complaint, HPI, etc.) should be bold.**
+- **The main content should be normal text (not bold).**
+- **Use professional medical terminology throughout.**
+
+{input_text}
+"""
+
+report_generation_prompt = """
+You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
+
+**Patient Information:**
+- Name: {patient_name}
+- Age: {patient_age}
+- File Number: {file_number}
+
+**Chief Complaint:**
+{chief_complaint}
+
+**History of Present Illness:**
+{present_illness}
+
+**Medical History:**
+{medical_history}
+
+**Past History:**
+{past_history}
+
+**Personal History:**
+{personal_history}
+
+**Family History:**
+{family_history}
+
+**System Review:**
+{system_review}
+
+**Relevant Context from Similar Cases:**
+{context}
+
+This report was electronically signed by Doctor - {doctor_name}, Department - {department}.
+
+**Formatting Instructions:**
+- Use professional medical terminology
+- Structure the report with clear sections
+- Ensure clinical accuracy
+- Maintain consistent formatting
+"""
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -60,6 +137,78 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Vector Store
+def get_vector_store():
+    qdrant = qdrant_client.QdrantClient(
+        url=os.getenv("QDRANT_HOST"),
+        api_key=os.getenv("QDRANT_API_KEY"),
+        timeout=60.0
+    )
+    embeddings = OpenAIEmbeddings()
+    return QdrantVectorStore(
+        client=qdrant,
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        embeddings=embeddings
+    )
+
+vector_store = get_vector_store()
+
+# Retriever Chain
+def get_context_retriever_chain():
+    llm = ChatOpenAI()
+    retriever = vector_store.as_retriever()
+    prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder("chat_history"),
+        ("user", "{input}"),
+        ("user", "Based on this, generate a search query for retrieving relevant medical context.")
+    ])
+    return create_history_aware_retriever(llm, retriever, prompt)
+
+# RAG Chain
+def get_conversational_rag_chain():
+    retriever_chain = get_context_retriever_chain()
+    llm = ChatOpenAI(streaming=True)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", engineeredprompt),
+        MessagesPlaceholder("chat_history"),
+        ("user", "{input}")
+    ])
+    return create_retrieval_chain(
+        retriever_chain,
+        create_stuff_documents_chain(llm, prompt)
+    )
+
+def get_report_generation_chain():
+    retriever_chain = get_context_retriever_chain()
+    llm = ChatOpenAI(streaming=True)
+    
+    # Update the prompt to include context
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", report_generation_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("user", "{input}")
+    ])
+    
+    # Create the document chain with the correct variable name
+    document_chain = create_stuff_documents_chain(
+        llm,
+        prompt,
+        document_variable_name="context"  # Explicitly set the context variable name
+    )
+    
+    return create_retrieval_chain(
+        retriever_chain,
+        document_chain
+    )
+
+report_generation_chain = get_report_generation_chain()
+
+# Initialize the RAG chain globally
+conversation_rag_chain = get_conversational_rag_chain()
+
+# Chat session history (in memory)
+chat_sessions = {}
 
 # User Model
 class User(Document):
@@ -619,7 +768,64 @@ def correct_text():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+@app.route('/correct-text-stream', methods=['POST'])
+@jwt_required()
+def correct_text_stream():
+    data = request.get_json()
+    input_text = data.get("text", "")
+    patient_name = data.get("patient_name", "").strip()
+    fileNumber = data.get("patient_fileNumber", "").strip()
+    patient_age = data.get("patient_age", "").strip()
+    doctor_name = data.get("doctor_name", "Dr.Test").strip()
+    department = data.get("department", "Department-Test").strip()
+
+    if not input_text or not patient_name or not fileNumber:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    session_id = str(uuid4())
+    chat_sessions[session_id] = []
+
+    def generate():
+        answer = ""
+        try:
+            # Prepare the full input with all required variables
+            full_input = {
+                "input_text": input_text,
+                "patient_name": patient_name,
+                "patient_age": patient_age,
+                "doctor_name": doctor_name,
+                "department": department,
+                "chat_history": chat_sessions[session_id],
+                "input": input_text  # Also include as 'input' for the retriever
+            }
+            
+            for chunk in conversation_rag_chain.stream(full_input):
+                token = chunk.get("answer", "")
+                answer += token
+                yield token
+                
+        except Exception as e:
+            yield f"\n[Error: {str(e)}]"
+
+        # Save to DB
+        doctor_id = get_jwt_identity()
+        editor_entry = Editor(
+            result=answer.strip(),
+            doctor_id=doctor_id,
+            date_of_report=datetime.utcnow(),
+            patient_name=patient_name,
+            patient_age=patient_age,
+            fileNumber=fileNumber,
+            doctor_name=doctor_name,
+            department=department,
+            generatedBy="Editor Page"
+        )
+        editor_entry.save()
+
+    return Response(stream_with_context(generate()), content_type='text/plain')
+
+
 @app.route('/editor-report', methods=['GET'])
 @jwt_required()
 def editor_report():
@@ -738,6 +944,91 @@ def identify_mistakes():
 
         identified_mistakes = response.choices[0].message.content.strip()
         return jsonify({"highlighted_text": identified_mistakes})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/compile-report-stream", methods=["POST"])
+@jwt_required()
+def compile_report_stream():
+    try:
+        # Extract form fields
+        patient_name = request.form.get("patientName")
+        age = request.form.get("age")
+        fileNumber = request.form.get("fileNumber")
+        personal_history = request.form.get("personalHistory")
+        chief_complaint = request.form.get("chiefComplaint")
+        present_illness = request.form.get("presentIllness")
+        medical_history = request.form.get("medicalHistory")
+        past_history = request.form.get("pastHistory")
+        family_history = request.form.get("familyHistory")
+        system_review = request.form.get("systemReview")
+        doctor_id = get_jwt_identity()
+        doctor_name = request.form.get("doctor_name", "Dr.Test").strip()
+        department = request.form.get("department", "Department-Test").strip()
+
+        if not all([patient_name, age, fileNumber]):
+            return jsonify({"error": "Missing required patient fields"}), 400
+
+        session_id = str(uuid4())
+        chat_sessions[session_id] = []
+
+        def generate():
+            answer = ""
+            try:
+                # Prepare the full input with all required variables
+                full_input = {
+                    "input": f"Generate medical report for {patient_name}, {age} years old",
+                    "chat_history": chat_sessions[session_id],
+                    # Context variables for the report template
+                    "patient_name": patient_name,
+                    "patient_age": age,
+                    "file_number": fileNumber,
+                    "chief_complaint": chief_complaint or "Not specified",
+                    "present_illness": present_illness or "Not specified",
+                    "medical_history": medical_history or "Not specified",
+                    "past_history": past_history or "Not specified",
+                    "personal_history": personal_history or "Not specified",
+                    "family_history": family_history or "Not specified",
+                    "system_review": system_review or "Not specified",
+                    "doctor_name": doctor_name,
+                    "department": department
+                }
+                
+                # Stream the response from the report generation chain
+                for chunk in report_generation_chain.stream(full_input):
+                    token = chunk.get("answer", "")
+                    answer += token
+                    yield token
+                    
+            except Exception as e:
+                yield f"\n[Error: {str(e)}]"
+                return
+
+            # Save to DB after successful generation
+            try:
+                report = MedicalReport(
+                    patient_name=patient_name,
+                    age=age,
+                    fileNumber=fileNumber,
+                    personal_history=personal_history,
+                    chief_complaint=chief_complaint,
+                    present_illness=present_illness,
+                    medical_history=medical_history,
+                    past_history=past_history,
+                    family_history=family_history,
+                    system_review=system_review,
+                    compiled_report=answer.strip(),
+                    generatedBy="Template Page (Stream)",
+                    doctor_name=doctor_name,
+                    department=department,
+                    doctor_id=doctor_id,
+                )
+                report.save()
+            except Exception as db_error:
+                yield f"\n[Database Error: {str(db_error)}]"
+
+        return Response(stream_with_context(generate()), content_type='text/plain')
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -975,6 +1266,153 @@ def translate_text():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def speech_to_text(audio_data_path):
+    with open(audio_data_path, "rb") as audio_file:
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            response_format="text",
+            file=audio_file
+        )
+    return {"text": transcript}
+
+def extract_fields(transcript):
+    prompt = f"""
+        You are a medical transcription service provider. Your main task is to extract all relevant fields of text from the transcript: {transcript}
+        and display them in a user form format. Please strictly adhere to the following format template, use medical terms:
+        **Patient Name:**
+        **Age:**
+        **File Number:**
+        **Chief Complaint:**
+        **Present Illness:**
+        **Medical History:**
+        **Past History:**
+        **Family History:**
+        **Personal History:**
+        **System Review:**
+        Display each field on a new line, do not combine them into one sentence. Your main job is to facilitate data entry for doctors using medical terminologies to describe the cases.
+    """
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+def extract_between(text, start_marker, end_marker=None):
+    try:
+        start_index = text.index(start_marker) + len(start_marker)
+        if end_marker:
+            end_index = text.index(end_marker, start_index)
+            return text[start_index:end_index].strip()
+        else:
+            return text[start_index:].strip()
+    except ValueError:
+        return ""
+
+@app.route("/transcribe", methods=["POST"])
+def transcribe():
+    if "audio_data" not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400  
+    audio_file = request.files["audio_data"]
+    supported_formats = ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']
+    file_extension = audio_file.filename.split('.')[-1].lower()
+    if file_extension not in supported_formats:
+        return jsonify({"error": f"Unsupported file format: {file_extension}. Supported formats: {supported_formats}"}), 400
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as temp_audio:
+        audio_file.save(temp_audio.name)
+        temp_audio_path = temp_audio.name
+    try:
+        transcript_result = speech_to_text(temp_audio_path)
+    finally:
+        os.remove(temp_audio_path)
+
+    return jsonify({"transcript": transcript_result.get("text", "")})
+
+@app.route("/extract_fields", methods=["POST"])
+def extract():
+    data = request.get_json()
+    transcript = data.get("transcript", "")
+    if not transcript:
+        return jsonify({"error": "No transcript provided"}), 400
+
+    try:
+        fields_result = extract_fields(transcript)
+        print("Fields Result:", fields_result)
+        fields = {
+            "patientName": extract_between(fields_result, "**Patient Name:**", "**Age:**"),
+            "age": extract_between(fields_result, "**Age:**", "**File Number:**"),
+            "fileNumber": extract_between(fields_result, "**File Number:**", "**Chief Complaint:**"),
+            "chiefComplaint": extract_between(fields_result, "**Chief Complaint:**", "**Present Illness:**"),
+            "presentIllness": extract_between(fields_result, "**Present Illness:**", "**Medical History:**"),
+            "medicalHistory": extract_between(fields_result, "**Medical History:**", "**Past History:**"),
+            "pastHistory": extract_between(fields_result, "**Past History:**", "**Family History:**"),
+            "familyHistory": extract_between(fields_result, "**Family History:**", "**Personal History:**"),
+            "personalHistory": extract_between(fields_result, "**Personal History:**", "**System Review:**"),
+            "systemReview": extract_between(fields_result, "**System Review:**")
+        }
+
+        return jsonify(fields)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Field extraction error: {str(e)}"}), 500
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    return jsonify({"error": str(e)}), 500
+
+@app.route("/extract_report_fields", methods=["POST"])
+def extract_report_fields():
+    data = request.get_json()
+    transcript = data.get("transcript", "")
+    if not transcript:
+        return jsonify({"error": "No transcript provided"}), 400
+
+    prompt = f"""
+You are a helpful medical assistant. Extract from:
+{transcript}
+
+Please output exactly:
+
+**Patient Name:**
+**Age:**
+**File Number:**
+**Medical Report:**
+
+Use medical terminology and separate each field on its own line.
+"""
+
+    resp = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    result = resp.choices[0].message.content
+
+    def get_between(text, start, end=None):
+        try:
+            i = text.index(start) + len(start)
+            if end:
+                j = text.index(end, i)
+                return text[i:j].strip()
+            return text[i:].strip()
+        except ValueError:
+            return ""
+
+    fields = {
+        "patientName": get_between(result, "**Patient Name:**", "**Age:**"),
+        "age": get_between(result, "**Age:**", "**File Number:**"),
+        "fileNumber": get_between(result, "**File Number:**", "**Medical Report:**"),
+        "medicalReport": get_between(result, "**Medical Report:**"),
+    }
+    return jsonify(fields)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
