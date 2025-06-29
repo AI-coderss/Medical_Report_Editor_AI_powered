@@ -61,7 +61,7 @@ function ReportTemplate() {
     try {
       const token = Cookies.get("token");
       const response = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/compile-report-stream",
         {
           method: "POST",
           body: formDataToSend,
