@@ -23,7 +23,7 @@ MarkupSafe==3.0.2
 mongoengine==0.29.1
 numpy==1.26.4
 openai>=1.68.2,<2.0.0
-packaging==24.2
+packaging==23.2
 pycparser==2.22
 pydantic==2.10.6
 pydantic_core==2.27.2
