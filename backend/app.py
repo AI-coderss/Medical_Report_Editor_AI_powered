@@ -48,7 +48,7 @@ app = Flask(__name__)
 # CORS(app)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
 # CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
 # MongoDB Connection (Using Connection String)
@@ -950,7 +950,7 @@ def identify_mistakes():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/compile-report-stream", methods=["POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def compile_report_stream():
     try:
         # Extract form fields
@@ -1050,97 +1050,71 @@ def create_medical_report():
         family_history = request.form.get("familyHistory")
         system_review = request.form.get("systemReview")
         doctor_id = get_jwt_identity()
-        doctor_name =request.form.get("doctor_name", "Dr.Test").strip()
+        doctor_name = request.form.get("doctor_name", "Dr.Test").strip()
         department = request.form.get("department", "Department-Test").strip()
-        # Generate AI medical report
-        structured_prompt = f"""
-        You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs at the end its necessary to write that this report is electronically signed by Doctor Name,Doctor Department:
 
-        **Patient Information:**
-        - Name: {patient_name}
-        - Age: {age}
-        - File Number: {fileNumber} 
+        if not all([patient_name, age, fileNumber]):
+            return jsonify({"error": "Missing required patient fields"}), 400
 
-        **Chief Complaint:**
-        {chief_complaint}
+        session_id = str(uuid4())
+        chat_sessions[session_id] = []
 
-        **History of Present Illness:**
-        {present_illness}
+        def generate():
+            answer = ""
+            try:
+                # Prepare the full input with all required variables
+                full_input = {
+                    "input": f"Generate medical report for {patient_name}, {age} years old",
+                    "chat_history": chat_sessions[session_id],
+                    # Context variables for the report template
+                    "patient_name": patient_name,
+                    "patient_age": age,
+                    "file_number": fileNumber,
+                    "chief_complaint": chief_complaint or "Not specified",
+                    "present_illness": present_illness or "Not specified",
+                    "medical_history": medical_history or "Not specified",
+                    "past_history": past_history or "Not specified",
+                    "personal_history": personal_history or "Not specified",
+                    "family_history": family_history or "Not specified",
+                    "system_review": system_review or "Not specified",
+                    "doctor_name": doctor_name,
+                    "department": department
+                }
+                
+                # Stream the response from the report generation chain
+                for chunk in report_generation_chain.stream(full_input):
+                    token = chunk.get("answer", "")
+                    answer += token
+                    yield token
+                    
+            except Exception as e:
+                yield f"\n[Error: {str(e)}]"
+                return
 
-        **Medical History:**
-        {medical_history}
+            # Save to DB after successful generation
+            try:
+                report = MedicalReport(
+                    patient_name=patient_name,
+                    age=age,
+                    fileNumber=fileNumber,
+                    personal_history=personal_history,
+                    chief_complaint=chief_complaint,
+                    present_illness=present_illness,
+                    medical_history=medical_history,
+                    past_history=past_history,
+                    family_history=family_history,
+                    system_review=system_review,
+                    compiled_report=answer.strip(),
+                    generatedBy="Template Page (Stream)",
+                    doctor_name=doctor_name,
+                    department=department,
+                    doctor_id=doctor_id,
+                )
+                report.save()
+            except Exception as db_error:
+                yield f"\n[Database Error: {str(db_error)}]"
 
-        **Past History:**
-        {past_history}
-
-        **Personal History:**
-        {personal_history}
-
-        **Family History:**
-        {family_history}
-
-        **System Review:**
-        {system_review}
-
-        This report is electronically signed by Doctor - {doctor_name}, Department - {department}
-        """
-
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": structured_prompt}]
-        )
-
-        compiled_report = response.choices[0].message.content.strip()
-        generatedBy="Template Page"
-
-        # Handle doctor signature upload
-        # if "doctorSignature" not in request.files:
-        #     return jsonify({"error": "No doctor signature file provided"}), 400
-
-        # file = request.files["doctorSignature"]
-        # if file.filename == "":
-        #     return jsonify({"error": "No file selected"}), 400
-
-        # if not allowed_file(file.filename):
-        #     return jsonify({"error": f"Invalid file type. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
-
-        # filename = secure_filename(file.filename)
-        # file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        # file.save(file_path)
-
-        # Create and save report in MongoDB
-        report = MedicalReport(
-            patient_name=patient_name,
-            age=age,
-            fileNumber=fileNumber,
-            personal_history=personal_history,
-            chief_complaint=chief_complaint,
-            present_illness=present_illness,
-            medical_history=medical_history,
-            past_history=past_history,
-            family_history=family_history,
-            system_review=system_review,
-            compiled_report=compiled_report,
-            generatedBy=generatedBy,
-            doctor_name=doctor_name,
-            department=department,
-            doctor_id=doctor_id,
-        )
-
-        # Store the signature file in GridFS
-        # with open(file_path, "rb") as f:
-        #     report.doctor_signature.put(f, content_type=file.content_type)
-
-        report.save()
-
-        # Remove file from local disk
-        # os.remove(file_path)
-
-        return jsonify({
-            "compiled_report": compiled_report,
-            "report_id": str(report.id),
-            "doctor_id": doctor_id
-        }), 201
+        return Response(stream_with_context(generate()), content_type='text/plain')
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
