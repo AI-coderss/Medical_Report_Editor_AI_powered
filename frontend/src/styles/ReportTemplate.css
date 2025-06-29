@@ -305,7 +305,7 @@ h3 {
 }
 .report-detail {
   position: sticky;
-  height: 75vh;
+  height: 100vh;
   overflow: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
