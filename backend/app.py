@@ -23,6 +23,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.vectorstores import Qdrant as QdrantVectorStore
+from langchain_community.vectorstores import Qdrant
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -194,8 +195,7 @@ def get_report_generation_chain():
     # Create the document chain with the correct variable name
     document_chain = create_stuff_documents_chain(
         llm,
-        prompt,
-        document_variable_name="context"  # Explicitly set the context variable name
+        prompt
     )
     
     return create_retrieval_chain(
