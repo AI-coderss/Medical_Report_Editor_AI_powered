@@ -47,7 +47,9 @@ app = Flask(__name__)
 # }})
 # CORS(app)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 # MongoDB Connection (Using Connection String)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -948,7 +950,7 @@ def identify_mistakes():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/compile-report-stream", methods=["POST"])
-@jwt_required()
+@jwt_required(optional=True)
 def compile_report_stream():
     try:
         # Extract form fields
