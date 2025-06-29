@@ -310,6 +310,7 @@ h3 {
   scrollbar-width: none;
   -ms-overflow-style: none;
   z-index: 1;
+  padding-bottom: 100px;
 }
 .one.report-detail.report-generated {
   height: 100%;
