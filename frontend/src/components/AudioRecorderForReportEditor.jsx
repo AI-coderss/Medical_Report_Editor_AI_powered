@@ -9,6 +9,7 @@ const AudioRecorderForReportEditor = ({
   setPatientAge,
   setPatientFileNumber,
   setMedicalReportText,
+  onSpeechText,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -50,6 +51,12 @@ const AudioRecorderForReportEditor = ({
       setPatientAge(fields.age || "");
       setPatientFileNumber(fields.fileNumber || "");
       setMedicalReportText(fields.medicalReport || transcript || "");
+
+      // Call onSpeechText if provided
+      if (onSpeechText) {
+        onSpeechText(transcript);
+      }
+
       setIsTranscriptReady(true);
     } catch (err) {
       console.error("Transcription error:", err);

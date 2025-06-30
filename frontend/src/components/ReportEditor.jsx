@@ -141,6 +141,22 @@ function ReportEditor() {
     }
   };
 
+  const insertTextAtCursor = (text) => {
+    const contentState = editorState.getCurrentContent();
+    const selectionState = editorState.getSelection();
+    const newContentState = Modifier.insertText(
+      contentState,
+      selectionState,
+      text
+    );
+    const newEditorState = EditorState.push(
+      editorState,
+      newContentState,
+      "insert-characters"
+    );
+    setEditorState(newEditorState);
+  };
+
   // ✅ Clear signature
   const clearSignature = () => {
     sigCanvas.current.clear();
@@ -495,6 +511,7 @@ function ReportEditor() {
             setPatientAge={setPatientAge}
             setPatientFileNumber={setpatientFileNumber}
             setMedicalReportText={setFormattedMarkdown}
+            onSpeechText={(text) => insertTextAtCursor(text)}
           />
           {/* Patient Details: 2 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 report-box ">
