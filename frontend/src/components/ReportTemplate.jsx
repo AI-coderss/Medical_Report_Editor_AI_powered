@@ -23,9 +23,71 @@ function ReportTemplate() {
   const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [showRecorder, setShowRecorder] = useState(false);
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
   const doctorName = localStorage.getItem("doctorName") || "Dr.Test";
   const department = localStorage.getItem("department") || "Department-Test";
+  const [activeField, setActiveField] = useState(null);
+  const [recognition, setRecognition] = useState(null);
+  const dictationBufferRef = React.useRef({});
+
+  const startDictation = (fieldName) => {
+    if (!SpeechRecognition) {
+      alert("Speech Recognition API not supported in this browser.");
+      return;
+    }
+
+    const recog = new SpeechRecognition();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.lang = "en-US";
+
+    // Initialize buffer for this field
+    dictationBufferRef.current[fieldName] = formData[fieldName] || "";
+
+    recog.onresult = (event) => {
+      let interimTranscript = "";
+      let finalTranscript = dictationBufferRef.current[fieldName] || "";
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + " ";
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      const combinedTranscript = finalTranscript + interimTranscript;
+
+      setFormData((prevData) => ({
+        ...prevData,
+        [fieldName]: combinedTranscript,
+      }));
+
+      // Update buffer with new finalTranscript (excluding interim)
+      dictationBufferRef.current[fieldName] = finalTranscript;
+    };
+
+    recog.onerror = (e) => {
+      console.error("Speech recognition error:", e);
+    };
+
+    recog.onend = () => {
+      console.log("Dictation ended.");
+    };
+
+    recog.start();
+    setRecognition(recog);
+  };
+
+  const stopDictation = () => {
+    if (recognition) {
+      recognition.stop();
+      setRecognition(null);
+    }
+  };
 
   const validateForm = () => {
     let newErrors = {};
@@ -143,7 +205,21 @@ function ReportTemplate() {
             compiledReport ? "report-generated" : ""
           }`}
         >
-          <AudioRecorder setFormData={setFormData} />
+          <div className="accordion-section">
+            <div
+              className="accordion-header"
+              onClick={() => setShowRecorder(!showRecorder)}
+            >
+              <h3>Audio Transcription</h3>
+              <span className="accordion-toggle">
+                {showRecorder ? "−" : "+"}
+              </span>
+            </div>
+            <div className={`accordion-content ${showRecorder ? "open" : ""}`}>
+              {showRecorder && <AudioRecorder setFormData={setFormData} />}
+            </div>
+          </div>
+
           <div className="report-form-container">
             <form className="report-form">
               {/* Form Fields */}
@@ -161,26 +237,61 @@ function ReportTemplate() {
               ].map((field) => (
                 <React.Fragment key={field}>
                   <label>{field.replace(/([A-Z])/g, " $1")}:</label>
-                  {field === "chiefComplaint" ||
-                  field === "presentIllness" ||
-                  field === "medicalHistory" ||
-                  field === "pastHistory" ||
-                  field === "familyHistory" ||
-                  field === "personalHistory" ||
-                  field === "systemReview" ? (
-                    <textarea
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                    />
-                  )}
+                  <div className="field-with-mic">
+                    {field === "chiefComplaint" ||
+                    field === "presentIllness" ||
+                    field === "medicalHistory" ||
+                    field === "pastHistory" ||
+                    field === "familyHistory" ||
+                    field === "personalHistory" ||
+                    field === "systemReview" ? (
+                      <textarea
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleChange}
+                        onFocus={() => setActiveField(field)}
+                        onBlur={(e) => {
+                          if (
+                            e.relatedTarget &&
+                            e.currentTarget.parentNode.contains(e.relatedTarget)
+                          ) {
+                            return;
+                          }
+                          if (recognition) stopDictation();
+                          setActiveField(null);
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        name={field}
+                        value={formData[field]}
+                        onChange={handleChange}
+                        onFocus={() => setActiveField(field)}
+                        onBlur={(e) => {
+                          if (
+                            e.relatedTarget &&
+                            e.currentTarget.parentNode.contains(e.relatedTarget)
+                          ) {
+                            return;
+                          }
+                          if (recognition) stopDictation();
+                          setActiveField(null);
+                        }}
+                      />
+                    )}
+                    {activeField === field && (
+                      <button
+                        type="button"
+                        className={`mic-btn ${recognition ? "recording" : ""}`}
+                        onClick={() =>
+                          recognition ? stopDictation() : startDictation(field)
+                        }
+                      >
+                        🎙️
+                      </button>
+                    )}
+                  </div>
                 </React.Fragment>
               ))}
             </form>
