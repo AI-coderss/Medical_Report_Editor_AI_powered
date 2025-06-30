@@ -196,7 +196,7 @@ function ReportTemplate() {
                   content={compiledReport}
                   fileName="Medical_Report.pdf"
                 />
-                <div className="compiled-report text-justify text-start px-20 pb-4 ">
+                <div className="compiled-report text-justify px-20 pb-4">
                   <div className="w-full mb-4">
                     <img
                       src="/head.png"
@@ -204,9 +204,13 @@ function ReportTemplate() {
                       className="w-full h-auto"
                     />
                   </div>
-                  <div
-                    dangerouslySetInnerHTML={{ __html: marked(compiledReport) }}
-                  />
+                  <pre className="pretag">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: marked(compiledReport),
+                      }}
+                    />
+                  </pre>
                   <div className="w-full mt-4">
                     <img
                       src="/foot.png"

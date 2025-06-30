@@ -191,6 +191,10 @@ textarea[name="doctorSignature"] {
   white-space: pre-wrap;
   font-family: "Courier New", monospace;
 }
+.pretag {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
 .signature-container {
   display: flex;
   flex-direction: column;
@@ -264,7 +268,7 @@ select {
   margin: 0px;
   text-align: center;
   width: 100%;
-  background-color: #6691f11c;
+  background-color: #f8f9fa;
   padding: 14px 10px;
   border-radius: 10px;
 }
