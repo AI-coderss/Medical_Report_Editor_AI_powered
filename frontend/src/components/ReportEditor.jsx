@@ -92,8 +92,103 @@ function ReportEditor() {
   const [patientAge, setPatientAge] = useState("");
   const [patientFileNumber, setpatientFileNumber] = useState("");
   const [downloadAfterEnhance, setDownloadAfterEnhance] = useState(false);
-
+  const [showReportRecorder, setShowReportRecorder] = useState(false);
   const pdfRef = useRef();
+  // Live Mic CODE
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+  const [recognition, setRecognition] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const finalTranscriptRef = useRef("");
+  const lastProcessedIndexRef = useRef(0);
+
+  const startDictation = () => {
+    if (!SpeechRecognition) {
+      alert("Speech Recognition API not supported in this browser.");
+      return;
+    }
+
+    const recog = new SpeechRecognition();
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.lang = "en-US";
+    recog.maxAlternatives = 1;
+
+    // Initialize with current editor content
+    finalTranscriptRef.current = editorState.getCurrentContent().getPlainText();
+    lastProcessedIndexRef.current = 0;
+
+    recog.onresult = (event) => {
+      let newText = "";
+      let stableText = finalTranscriptRef.current;
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+
+        if (result.isFinal) {
+          // For final results, replace the interim text
+          stableText = finalTranscriptRef.current + transcript + " ";
+          finalTranscriptRef.current = stableText;
+          newText = stableText;
+          lastProcessedIndexRef.current = i + 1;
+        } else {
+          // For interim results, append to the stable text
+          newText = stableText + transcript;
+        }
+      }
+
+      if (newText) {
+        updateEditor(newText);
+      }
+    };
+
+    recog.onerror = (e) => {
+      console.error("Speech recognition error:", e);
+    };
+
+    recog.onend = () => {
+      if (isRecording && recognition) {
+        recog.start();
+      }
+    };
+
+    recog.start();
+    setRecognition(recog);
+    setIsRecording(true);
+  };
+
+  const stopDictation = () => {
+    if (recognition) {
+      setIsRecording(false);
+      recognition.stop();
+      setRecognition(null);
+      // Finalize any remaining text
+      updateEditor(finalTranscriptRef.current);
+    }
+  };
+
+  const updateEditor = (text) => {
+    const content = editorState.getCurrentContent();
+    const selection = editorState.getSelection();
+
+    const newContent = Modifier.replaceText(
+      content,
+      selection.merge({
+        anchorOffset: 0,
+        focusOffset: content.getPlainText().length,
+      }),
+      text
+    );
+
+    const newEditorState = EditorState.push(
+      editorState,
+      newContent,
+      "insert-characters"
+    );
+
+    handleEditorChange(newEditorState);
+  };
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
     const savedContent = localStorage.getItem(REPORT_STORAGE_KEY);
@@ -318,85 +413,6 @@ function ReportEditor() {
     setLoading(false);
   };
 
-  // const handleEditReport = async () => {
-  //   const content = editorState.getCurrentContent();
-  //   const plainText = content.getPlainText();
-
-  //   if (!plainText.trim()) {
-  //     alert("The document is empty. Please write something.");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const token = Cookies.get("token");
-
-  //     // 1️⃣ Correct the text first (updates editor content)
-  //     const correctResponse = await fetch(
-  //       "https://medical-report-editor-ai-powered-backend.onrender.com/correct-text",
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: JSON.stringify({
-  //           text: plainText,
-  //           patient_name: patientName,
-  //           patient_age: patientAge,
-  //           patient_fileNumber: patientFileNumber,
-  //           doctor_name: doctorName,
-  //           department: department,
-  //         }),
-  //       }
-  //     );
-
-  //     const correctData = await correctResponse.json();
-
-  //     if (correctResponse.ok) {
-  //       const correctedContent = ContentState.createFromText(
-  //         correctData.corrected_text
-  //       );
-  //       setEditorState(
-  //         EditorState.createWithContent(correctedContent, decorator)
-  //       );
-  //       setFormattedMarkdown(correctData.corrected_text); // Save Markdown content
-  //       setDownloadAfterEnhance(true);
-  //       // if (pdfRef.current) {
-  //       //   pdfRef.current.download();
-  //       // }
-  //     } else {
-  //       alert("Error: " + correctData.error);
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     // 2️⃣ Then detect mistakes (show in sidebar)
-  //     const mistakeResponse = await fetch(
-  //       "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
-  //       {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({ text: correctData.corrected_text }),
-  //       }
-  //     );
-
-  //     const mistakeData = await mistakeResponse.json();
-
-  //     if (mistakeResponse.ok) {
-  //       setMistakes(mistakeData.highlighted_text);
-  //       setSidebarOpen(true);
-  //     } else {
-  //       alert("Error: " + mistakeData.error);
-  //     }
-  //   } catch (error) {
-  //     alert("Failed to connect to the backend.");
-  //   }
-
-  //   setLoading(false);
-  // };
-
   return (
     <div className="editor-container">
       {/* Toolbar */}
@@ -506,13 +522,34 @@ function ReportEditor() {
           <h2 className="text-2xl font-bold text-center text-gray-800 tracking-tight ">
             Patient <span>Information</span>
           </h2>
-          <AudioRecorderForReportEditor
-            setPatientName={setPatientName}
-            setPatientAge={setPatientAge}
-            setPatientFileNumber={setpatientFileNumber}
-            setMedicalReportText={setFormattedMarkdown}
-            onSpeechText={(text) => insertTextAtCursor(text)}
-          />
+          <div className="accordion-section">
+            <div
+              className="accordion-header"
+              onClick={() => setShowReportRecorder(!showReportRecorder)}
+            >
+              <h3>Audio Transcription</h3>
+              <span className="accordion-toggle">
+                {showReportRecorder ? "−" : "+"}
+              </span>
+            </div>
+
+            <div
+              className={`accordion-content ${
+                showReportRecorder ? "open" : ""
+              }`}
+            >
+              {showReportRecorder && (
+                <AudioRecorderForReportEditor
+                  setPatientName={setPatientName}
+                  setPatientAge={setPatientAge}
+                  setPatientFileNumber={setpatientFileNumber}
+                  setMedicalReportText={setFormattedMarkdown}
+                  onSpeechText={(text) => insertTextAtCursor(text)}
+                />
+              )}
+            </div>
+          </div>
+
           {/* Patient Details: 2 Columns */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 report-box ">
             <div className="flex flex-col">
@@ -559,83 +596,46 @@ function ReportEditor() {
             <h3 className="Small-medium font-bold text-gray-800 pb-2 report text-center my-[4px]">
               Medical Report
             </h3>
-
-            {readyToRender &&
-              (typeof formattedMarkdown === "string" &&
-              formattedMarkdown.trim().length > 0 ? (
-                <div className="prose max-w-none  p-4  bg-white">
-                  <SafeMarkdown content={formattedMarkdown} />
-                </div>
-              ) : (
-                <div className="rounded-xl p-4 bg-white medical">
-                  <Editor
-                    editorState={editorState}
-                    onChange={handleEditorChange}
-                    placeholder="Write your medical report here..."
-                  />
-                </div>
-              ))}
+            {readyToRender && (
+              <div className="relative">
+                {" "}
+                {/* Add relative positioning to the container */}
+                {typeof formattedMarkdown === "string" &&
+                formattedMarkdown.trim().length > 0 ? (
+                  <div className="prose max-w-none p-4 bg-white">
+                    <SafeMarkdown content={formattedMarkdown} />
+                  </div>
+                ) : (
+                  <div className="rounded-xl p-4 bg-white medical">
+                    <Editor
+                      editorState={editorState}
+                      onChange={handleEditorChange}
+                      placeholder="Write your medical report here..."
+                    />
+                    {/* Centered microphone button */}
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                      <button
+                        type="button"
+                        className={`mic-btn ${isRecording ? "recording" : ""}`}
+                        onClick={() =>
+                          isRecording ? stopDictation() : startDictation()
+                        }
+                      >
+                        {isRecording ? (
+                          <div className="w-6 h-6 bg-red-500 rounded-full animate-pulse"></div>
+                        ) : (
+                          <span className="text-xl">🎙️</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Report Editor Row */}
-        {/* <div className="space-y-4">
-          {loading && <Loader isLoading={loading} />}
-
-          {readyToRender &&
-            (typeof formattedMarkdown === "string" &&
-            formattedMarkdown.trim().length > 0 ? (
-              <div className="prose max-w-none border border-gray-200 p-4 rounded-xl bg-gray-50">
-                <SafeMarkdown content={formattedMarkdown} />
-              </div>
-            ) : (
-              <div className="border border-gray-300 rounded-xl p-4 shadow-sm bg-white">
-                <Editor
-                  editorState={editorState}
-                  onChange={handleEditorChange}
-                  placeholder="Write your medical report here..."
-                />
-              </div>
-            ))}
-        </div> */}
       </div>
 
-      {/* Editor or Markdown Preview */}
-      {/* <div className="word-editor" style={{ fontFamily: selectedFont }}>
-        {loading && <Loader isLoading={loading} />}
-        {readyToRender &&
-          (typeof formattedMarkdown === "string" &&
-          formattedMarkdown.trim().length > 0 ? (
-            <SafeMarkdown content={formattedMarkdown} />
-          ) : (
-            <Editor
-              editorState={editorState}
-              onChange={handleEditorChange}
-              placeholder="Write your medical report here..."
-            />
-          ))}
-
-        {signature && (
-          <div className="signature-display">
-            <p>
-              <strong>Doctor Name:</strong> {firstName} {lastName}
-            </p>
-            <p>
-              <strong>Department:</strong> {department}
-            </p>
-            <p>
-              <strong>Signature:</strong>
-            </p>
-            <img
-              src={signature}
-              alt="Saved Signature"
-              className="saved-signature"
-            />
-          </div>
-        )}
-      </div> */}
-
-      {/* Sidebar */}
       <MistakeSidebar
         mistakes={mistakes}
         isOpen={sidebarOpen}

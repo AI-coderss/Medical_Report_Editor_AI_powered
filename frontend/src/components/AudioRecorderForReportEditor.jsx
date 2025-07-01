@@ -73,7 +73,8 @@ const AudioRecorderForReportEditor = ({
         pause={isPaused}
         onStop={onStop}
         strokeColor="#007bff"
-        backgroundColor="#fff"
+        visualSetting="frequencyBars"
+        backgroundColor="#FFFFFF"
       />
       <div>
         <button onClick={startRecording} disabled={isRecording && !isPaused}>

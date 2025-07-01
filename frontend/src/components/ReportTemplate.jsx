@@ -317,6 +317,7 @@ function ReportTemplate() {
                   </div>
                   <pre className="pretag">
                     <div
+                      className="pretag"
                       dangerouslySetInnerHTML={{
                         __html: marked(compiledReport),
                       }}

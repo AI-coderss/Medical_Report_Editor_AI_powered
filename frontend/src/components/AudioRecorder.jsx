@@ -131,7 +131,8 @@ const AudioRecorder = ({ setFormData }) => {
         pause={isPaused}
         onStop={onStop}
         strokeColor="#007bff"
-        backgroundColor="#fff"
+        visualSetting="frequencyBars"
+        backgroundColor="#FFFFFF"
       />
       <div className="recorder-buttons">
         <button onClick={startRecording} disabled={isRecording && !isPaused}>
