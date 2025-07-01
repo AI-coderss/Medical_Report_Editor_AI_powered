@@ -187,7 +187,6 @@ function ReportTemplate() {
         {loading && <Loader isLoading={loading} />}
       </div>
       <div className="toolbar">
-        <h2>Medical Report Editor</h2>
         <button
           className="generate-btn"
           onClick={handleSubmit}
@@ -300,7 +299,7 @@ function ReportTemplate() {
 
         <div className="report-layout one">
           <div className="compiled-report-container">
-            <h3>Compiled Medical Report</h3>
+            <h3>Medical Report</h3>
             {compiledReport ? (
               <>
                 <PDFDownloader
@@ -333,9 +332,7 @@ function ReportTemplate() {
                 </div>
               </>
             ) : (
-              <p className="empty-report">
-                The report will be displayed here after generation.
-              </p>
+              <p className="empty-report"></p>
             )}
           </div>
         </div>

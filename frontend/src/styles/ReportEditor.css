@@ -207,9 +207,9 @@
 }
 /* If you're using regular CSS */
 .mic-btn1 {
-  width: 120px;
+  width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 67%;
   background-color: #3b82f6;
   color: white;
   display: flex;
@@ -217,8 +217,12 @@
   justify-content: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   transition: background-color 0.2s;
-  border-radius: 6px;
+  border-radius: 50%;
   font-size: 13px !important;
+  margin-inline: 4px;
+}
+button.mic-btn1 img {
+  filter: invert(1);
 }
 button.mic-btn1 span {
   font-size: 17px;
