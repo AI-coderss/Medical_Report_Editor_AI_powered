@@ -83,15 +83,12 @@ Your task is to refine and improve the following medical report while ensuring:
 - All **report section headers (Chief Complaint, HPI, etc.) should be bold**.
 - The **main content should be normal text** (not bold).
 - Use **professional medical terminology** throughout.
-- Do **not include any extra headings like '[Medical Report],[Hospital Logo]' or metadata headings at the top**.
-
-**Final Output Instructions:**
-- Wrap the entire formatted report output inside the following HTML tag:
-  <p className="pretag"> [your formatted report here] </p>
+- Do **not include any extra headings like '[Medical Report]' or metadata headings at the top**.
 
 Here is the report to refine:
 {input_text}
 """
+
 
 report_generation_prompt = """
 You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
