@@ -153,9 +153,6 @@ const AudioRecorder = ({ setFormData }) => {
           <Loader isLoading={loading} />
         </div>
       )}
-      {isTranscriptReady && (
-        <p className="transcript-ready">Transcribed and fields filled!</p>
-      )}
     </div>
   );
 };

@@ -92,7 +92,6 @@ const AudioRecorderForReportEditor = ({
           <Loader isLoading={loading} />
         </div>
       )}
-      {isTranscriptReady && <p>Transcribed and fields filled!</p>}
     </div>
   );
 };
