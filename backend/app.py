@@ -69,21 +69,27 @@ Use the following **retrieved context** from similar medical documents to guide 
 {context}
 
 Your task is to refine and improve the following medical report while ensuring:
-- Grammatical accuracy
-- Professional tone
+- Grammatical accuracy.
+- Professional tone.
 - Adherence to standard medical documentation formats.
-- Show the patient name and age at the top of the report like this:  
-  Patient Name - {patient_name}, Patient Age - {patient_age}
+- Display the patient name and age at the top of the report like this:
+  **Patient Name - {patient_name}, Patient Age - {patient_age}**
 
-- At the end of the report, add the following line:  
-  This report was electronically signed by Doctor - {doctor_name}, Department - {department}.
+- At the end of the report, add the following line:
+  **This report was electronically signed by Doctor - {doctor_name}, Department - {department}.**
 
 **Formatting Instructions:**
-- **The report title should be bold and centered.**
-- **All report section headers (Chief Complaint, HPI, etc.) should be bold.**
-- **The main content should be normal text (not bold).**
-- **Use professional medical terminology throughout.**
+- The **report title should be bold and centered**.
+- All **report section headers (Chief Complaint, HPI, etc.) should be bold**.
+- The **main content should be normal text** (not bold).
+- Use **professional medical terminology** throughout.
+- Do **not include any extra headings like '[Medical Report],[Hospital Logo]' or metadata headings at the top**.
 
+**Final Output Instructions:**
+- Wrap the entire formatted report output inside the following HTML tag:
+  <p className="pretag"> [your formatted report here] </p>
+
+Here is the report to refine:
 {input_text}
 """
 

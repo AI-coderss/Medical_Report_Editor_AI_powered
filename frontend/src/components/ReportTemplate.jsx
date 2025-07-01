@@ -314,14 +314,18 @@ function ReportTemplate() {
                       className="w-full h-auto"
                     />
                   </div>
-                  <pre className="pretag">
-                    <div
-                      className="pretag"
-                      dangerouslySetInnerHTML={{
-                        __html: marked(compiledReport),
-                      }}
-                    />
-                  </pre>
+                  <div
+                    className="compiled-markdown"
+                    dangerouslySetInnerHTML={{
+                      __html: marked(
+                        compiledReport.replace(
+                          /^\[Medical Report\]\s*-*\s*/i,
+                          ""
+                        )
+                      ),
+                    }}
+                  />
+
                   <div className="w-full mt-4">
                     <img
                       src="/foot.png"
