@@ -79,7 +79,7 @@
   cursor: pointer;
   font-size: 14px;
   height: 30px;
-  margin-left: 20px;
+  margin-left: 3px;
 }
 
 .edit-btn:hover {
@@ -206,17 +206,28 @@
   padding: 0 14px;
 }
 /* If you're using regular CSS */
-.mic-btn {
-  width: 3rem;
-  height: 3rem;
+.mic-btn1 {
+  width: 120px;
+  height: 36px;
   border-radius: 50%;
-  background-color: #3b82f6; /* blue-500 */
+  background-color: #3b82f6;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   transition: background-color 0.2s;
+  border-radius: 6px;
+  font-size: 13px !important;
+}
+button.mic-btn1 span {
+  font-size: 17px;
+}
+.absolute.bottom-4 {
+  position: relative;
+}
+.bottom-4 {
+  margin-left: 25px;
 }
 
 .mic-btn:hover {

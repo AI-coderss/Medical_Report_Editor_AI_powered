@@ -487,6 +487,22 @@ function ReportEditor() {
           >
             <FaDownload />
           </PDFDownloader>
+          <div className="">
+            <button
+              type="button"
+              className={`mic-btn1 ${isRecording ? "recording" : ""}`}
+              onClick={() => (isRecording ? stopDictation() : startDictation())}
+            >
+              {isRecording ? (
+                <div className="relative flex items-center justify-center w-10 h-10">
+                  <div className="absolute inline-flex w-full h-full rounded-full bg-red-500 opacity-75 animate-ping"></div>
+                  <div className="relative w-6 h-6 bg-red-600 rounded-full shadow-lg"></div>
+                </div>
+              ) : (
+                <span className="text-xl">🎙️Transcribe</span>
+              )}
+            </button>
+          </div>
           {/* Edit Button */}
           <button
             className="edit-btn"
@@ -612,22 +628,6 @@ function ReportEditor() {
                       onChange={handleEditorChange}
                       placeholder="Write your medical report here..."
                     />
-                    {/* Centered microphone button */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                      <button
-                        type="button"
-                        className={`mic-btn ${isRecording ? "recording" : ""}`}
-                        onClick={() =>
-                          isRecording ? stopDictation() : startDictation()
-                        }
-                      >
-                        {isRecording ? (
-                          <div className="w-6 h-6 bg-red-500 rounded-full animate-pulse"></div>
-                        ) : (
-                          <span className="text-xl">🎙️</span>
-                        )}
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
