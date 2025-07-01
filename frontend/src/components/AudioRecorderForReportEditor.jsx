@@ -76,7 +76,7 @@ const AudioRecorderForReportEditor = ({
         visualSetting="frequencyBars"
         backgroundColor="#FFFFFF"
       />
-      <div>
+      <div className="mic3btns">
         <button onClick={startRecording} disabled={isRecording && !isPaused}>
           Record
         </button>
