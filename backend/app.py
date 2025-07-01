@@ -49,8 +49,8 @@ app = Flask(__name__)
 # CORS(app)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
 # CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
+# CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, origins=["https://medical-report-editor-ai-powered-dsah.onrender.com"])
 
 # MongoDB Connection (Using Connection String)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
