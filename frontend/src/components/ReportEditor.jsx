@@ -499,7 +499,7 @@ function ReportEditor() {
                   <div className="relative w-6 h-6 bg-red-600 rounded-full shadow-lg"></div>
                 </div>
               ) : (
-                <span className="text-xl">🎙️Transcribe</span>
+                <span className="text-xl">🎙️</span>
               )}
             </button>
           </div>
