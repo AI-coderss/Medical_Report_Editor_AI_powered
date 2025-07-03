@@ -1391,29 +1391,34 @@ def extract_report_fields():
     if not transcript:
         return jsonify({"error": "No transcript provided"}), 400
 
+    # Updated prompt to extract the 6 headings only
     prompt = f"""
-You are a helpful medical assistant. Extract from:
+You are a helpful medical assistant. Extract the following fields from the medical report below:
+
 {transcript}
 
-Please output exactly:
+Please output exactly in this order:
 
-**Patient Name:**
-**Age:**
-**File Number:**
-**Medical Report:**
+Chief Complaint:
+Present Illness:
+Medical History:
+Family History:
+Personal History:
+System Review:
 
-Use medical terminology and separate each field on its own line.
+Use medical terminology and list each field on its own line starting with the heading as shown, followed by its corresponding content. If any information is missing, leave it blank after the heading.
 """
 
     resp = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a helpful medical assistant."},
             {"role": "user", "content": prompt}
         ]
     )
     result = resp.choices[0].message.content
 
+    # Utility to get text between headings
     def get_between(text, start, end=None):
         try:
             i = text.index(start) + len(start)
@@ -1424,14 +1429,17 @@ Use medical terminology and separate each field on its own line.
         except ValueError:
             return ""
 
+    # Extract each section by its heading
     fields = {
-        "patientName": get_between(result, "**Patient Name:**", "**Age:**"),
-        "age": get_between(result, "**Age:**", "**File Number:**"),
-        "fileNumber": get_between(result, "**File Number:**", "**Medical Report:**"),
-        "medicalReport": get_between(result, "**Medical Report:**"),
+        "chiefComplaint": get_between(result, "Chief Complaint:", "Present Illness:"),
+        "presentIllness": get_between(result, "Present Illness:", "Medical History:"),
+        "medicalHistory": get_between(result, "Medical History:", "Family History:"),
+        "familyHistory": get_between(result, "Family History:", "Personal History:"),
+        "personalHistory": get_between(result, "Personal History:", "System Review:"),
+        "systemReview": get_between(result, "System Review:")
     }
-    return jsonify(fields)
 
+    return jsonify(fields)
 
 if __name__ == '__main__':
     app.run(debug=True)
