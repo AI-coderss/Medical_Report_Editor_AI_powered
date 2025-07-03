@@ -50,9 +50,7 @@ const AudioRecorderForReportEditor = ({
       setPatientName(fields.patientName || "");
       setPatientAge(fields.age || "");
       setPatientFileNumber(fields.fileNumber || "");
-      if (setMedicalReportText) {
-        setMedicalReportText(fields.medicalReport || transcript || "");
-      }
+      setMedicalReportText(fields.medicalReport || transcript || "");
 
       // Call onSpeechText if provided
       if (onSpeechText) {
