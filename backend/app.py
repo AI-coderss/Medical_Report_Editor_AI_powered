@@ -85,7 +85,7 @@ Your task is to refine and improve the following medical report while ensuring:
 - Use **professional medical terminology** throughout.
 - Do **not include any extra headings like '[Medical Report]' or metadata headings at the top**.
 - **Do not include any concluding remarks, summaries, or statements such as 'This report provides an overview...' or 'Feel free to reach out...' at the end of the report. Only end with the electronically signed line.**
-- **Ensure the report sections follow this exact sequence**:
+- **Ensure the report sections follow this exact sequence with proper headings**:
   1. Chief Complaint
   2. Present Illness
   3. Medical History
@@ -136,7 +136,7 @@ This report was electronically signed by Doctor - {doctor_name}, Department - {d
 - Structure the report with clear sections
 - Ensure clinical accuracy
 - Maintain consistent formatting
-- **Output Structure (in this order):**
+- **Output Structure (in this order) with a proper heading:**
   1. Chief Complaint
   2. Present Illness
   3. Medical History
