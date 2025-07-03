@@ -561,7 +561,6 @@ function ReportEditor() {
                   setPatientName={setPatientName}
                   setPatientAge={setPatientAge}
                   setPatientFileNumber={setpatientFileNumber}
-                  setMedicalReportText={setFormattedMarkdown}
                   onSpeechText={(text) => insertTextAtCursor(text)}
                 />
               )}
@@ -618,20 +617,11 @@ function ReportEditor() {
               <div className="relative">
                 {" "}
                 {/* Add relative positioning to the container */}
-                {typeof formattedMarkdown === "string" &&
-                formattedMarkdown.trim().length > 0 ? (
-                  <div className="prose max-w-none p-4 bg-white">
-                    <SafeMarkdown content={formattedMarkdown} />
-                  </div>
-                ) : (
-                  <div className="rounded-xl p-4 bg-white medical">
-                    <Editor
-                      editorState={editorState}
-                      onChange={handleEditorChange}
-                      placeholder="Write your medical report here..."
-                    />
-                  </div>
-                )}
+                <Editor
+                  editorState={editorState}
+                  onChange={handleEditorChange}
+                  placeholder="Write your medical report here..."
+                />
               </div>
             )}
           </div>
