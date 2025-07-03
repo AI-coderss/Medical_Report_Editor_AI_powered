@@ -80,15 +80,22 @@ Your task is to refine and improve the following medical report while ensuring:
 
 **Formatting Instructions:**
 - The **report title should be bold and centered**.
-- All **report section headers (Chief Complaint, HPI, etc.) should be bold**.
+- All **report section headers (Chief Complaint, Present Illness, etc.) should be bold**.
 - The **main content should be normal text** (not bold).
 - Use **professional medical terminology** throughout.
 - Do **not include any extra headings like '[Medical Report]' or metadata headings at the top**.
+- **Do not include any concluding remarks, summaries, or statements such as 'This report provides an overview...' or 'Feel free to reach out...' at the end of the report. Only end with the electronically signed line.**
+- **Ensure the report sections follow this exact sequence**:
+  1. Chief Complaint
+  2. Present Illness
+  3. Medical History
+  4. Family History
+  5. Personal History
+  6. System Review
 
 Here is the report to refine:
 {input_text}
 """
-
 
 report_generation_prompt = """
 You are an AI medical assistant. Generate a **well-structured** and **professionally formatted** medical report using the following inputs:
@@ -129,6 +136,14 @@ This report was electronically signed by Doctor - {doctor_name}, Department - {d
 - Structure the report with clear sections
 - Ensure clinical accuracy
 - Maintain consistent formatting
+- **Output Structure (in this order):**
+  1. Chief Complaint
+  2. Present Illness
+  3. Medical History
+  4. Family History
+  5. Personal History
+  6. System Review
+- **Do not include any concluding remarks, summaries, or statements such as 'This report provides an overview...' or 'Feel free to reach out...' at the end of the report. Only include the electronically signed line.**
 """
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
