@@ -1392,45 +1392,44 @@ def extract_report_fields():
         return jsonify({"error": "No transcript provided"}), 400
 
     prompt = f"""
-You are a helpful medical assistant. Extract from:
+You are an AI medical assistant. From the transcript below, generate a **well-structured** and **formatted** medical report using the format below:
+Important - Do not use Markdown-style formatting, symbols like -, or **.
+Transcript:
 {transcript}
 
-Please output exactly:
+Follow this output format strictly(if any of the data is unavaliable keep it empty):
 
-**Patient Name:**
-**Age:**
-**File Number:**
-**Medical Report:**
+Chief Complaint:
+...
 
-Use medical terminology and separate each field on its own line.
+Present Illness:
+...
+
+Medical History:
+...
+
+Family History:
+...
+
+Personal History:
+...
+
+System Review:
+...
 """
 
     resp = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a helpful medical assistant."},
             {"role": "user", "content": prompt}
         ]
     )
     result = resp.choices[0].message.content
 
-    def get_between(text, start, end=None):
-        try:
-            i = text.index(start) + len(start)
-            if end:
-                j = text.index(end, i)
-                return text[i:j].strip()
-            return text[i:].strip()
-        except ValueError:
-            return ""
-
-    fields = {
-        "patientName": get_between(result, "**Patient Name:**", "**Age:**"),
-        "age": get_between(result, "**Age:**", "**File Number:**"),
-        "fileNumber": get_between(result, "**File Number:**", "**Medical Report:**"),
-        "medicalReport": get_between(result, "**Medical Report:**"),
-    }
-    return jsonify(fields)
+    return jsonify({
+        "medicalReport": result
+    })
 
 
 if __name__ == '__main__':

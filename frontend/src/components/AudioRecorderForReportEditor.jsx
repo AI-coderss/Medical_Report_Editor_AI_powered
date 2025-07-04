@@ -3,12 +3,13 @@ import { ReactMic } from "react-mic";
 import axios from "axios";
 import Loader from "./Loader";
 import "../styles/AudioRecorder.css";
+import { ContentState, EditorState } from "draft-js";
 
 const AudioRecorderForReportEditor = ({
   setPatientName,
   setPatientAge,
   setPatientFileNumber,
-  setMedicalReportText,
+  setEditorState, // ✅ NEW: Inject directly into Draft.js editor
   onSpeechText,
 }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -21,10 +22,12 @@ const AudioRecorderForReportEditor = ({
     setIsPaused(false);
     setIsTranscriptReady(false);
   };
+
   const stopRecording = () => {
     setIsRecording(false);
     setIsPaused(false);
   };
+
   const togglePause = () => setIsPaused((p) => !p);
 
   const onStop = async (recordedBlob) => {
@@ -34,12 +37,14 @@ const AudioRecorderForReportEditor = ({
     });
     const fd = new FormData();
     fd.append("audio_data", audioFile);
+
     try {
       const { data: transData } = await axios.post(
         "https://medical-report-editor-ai-powered-backend.onrender.com/transcribe",
         fd,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+
       const transcript = transData.transcript;
 
       const { data: fields } = await axios.post(
@@ -50,9 +55,15 @@ const AudioRecorderForReportEditor = ({
       setPatientName(fields.patientName || "");
       setPatientAge(fields.age || "");
       setPatientFileNumber(fields.fileNumber || "");
-      setMedicalReportText(fields.medicalReport || transcript || "");
 
-      // Call onSpeechText if provided
+      const fullText =
+        fields?.medicalReport?.trim() || transcript?.trim() || "";
+
+      // ✅ Inject into Draft.js editor
+      const contentState = ContentState.createFromText(fullText);
+      const newEditorState = EditorState.createWithContent(contentState);
+      setEditorState(newEditorState);
+
       if (onSpeechText) {
         onSpeechText(transcript);
       }

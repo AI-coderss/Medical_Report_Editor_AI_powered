@@ -561,8 +561,7 @@ function ReportEditor() {
                   setPatientName={setPatientName}
                   setPatientAge={setPatientAge}
                   setPatientFileNumber={setpatientFileNumber}
-                  setMedicalReportText={setFormattedMarkdown}
-                  onSpeechText={(text) => insertTextAtCursor(text)}
+                  setEditorState={setEditorState} // 👈 pass this down
                 />
               )}
             </div>
