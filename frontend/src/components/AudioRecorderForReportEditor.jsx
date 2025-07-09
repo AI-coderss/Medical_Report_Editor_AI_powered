@@ -4,6 +4,7 @@ import axios from "axios";
 import Loader from "./Loader";
 import "../styles/AudioRecorder.css";
 import { ContentState, EditorState } from "draft-js";
+import { useLanguage } from "./LanguageContext";
 
 const AudioRecorderForReportEditor = ({
   setPatientName,
@@ -16,6 +17,8 @@ const AudioRecorderForReportEditor = ({
   const [isPaused, setIsPaused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isTranscriptReady, setIsTranscriptReady] = useState(false);
+  const { language } = useLanguage();
+  const isArabic = language === "ar";
 
   const startRecording = () => {
     setIsRecording(true);
@@ -77,8 +80,12 @@ const AudioRecorderForReportEditor = ({
   };
 
   return (
-    <div className="audio-recorder">
-      <h3>Record Patient Info & Report 🎤</h3>
+    <div className="audio-recorder" dir={language === "ar" ? "rtl" : "ltr"}>
+      <h3>
+        {isArabic
+          ? "سجّل معلومات المريض والتقرير 🎤"
+          : "Record Patient Info & Report 🎤"}
+      </h3>
       <ReactMic
         record={isRecording}
         pause={isPaused}
@@ -89,13 +96,19 @@ const AudioRecorderForReportEditor = ({
       />
       <div className="mic3btns">
         <button onClick={startRecording} disabled={isRecording && !isPaused}>
-          Record
+          {isArabic ? "بدء التسجيل" : "Record"}
         </button>
         <button onClick={stopRecording} disabled={!isRecording}>
-          Stop
+          {isArabic ? "إيقاف" : "Stop"}
         </button>
         <button onClick={togglePause} disabled={!isRecording}>
-          {isPaused ? "Resume" : "Pause"}
+          {isPaused
+            ? isArabic
+              ? "استئناف"
+              : "Resume"
+            : isArabic
+            ? "إيقاف مؤقت"
+            : "Pause"}
         </button>
       </div>
       {loading && (

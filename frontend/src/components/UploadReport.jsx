@@ -5,13 +5,24 @@ import { FaUpload, FaTrash, FaDownload, FaLanguage } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 import PDFDownloader from "../components/PdfDownloader";
 import Loader from "../components/Loader";
+import { useLanguage } from "./LanguageContext";
 
 const UploadReport = () => {
   const [structuredReport, setStructuredReport] = useState("");
   const [translatedReport, setTranslatedReport] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en"); // Default: English
-
+  const { language } = useLanguage();
+  const labels = {
+    upload: language === "en" ? "Upload Report" : "رفع التقرير",
+    clear: language === "en" ? "Clear" : "مسح",
+    translate: language === "en" ? "Translate To" : "ترجمة إلى",
+    placeholder:
+      language === "en"
+        ? "Structured report will appear here..."
+        : "سيظهر التقرير المنظم هنا...",
+    download: language === "en" ? "Download" : "تحميل",
+  };
   // Handle PDF Upload
   const handleUpload = async (event) => {
     const file = event.target.files[0];
@@ -88,11 +99,11 @@ const UploadReport = () => {
   };
 
   return (
-    <div className="upload-container">
+    <div className="upload-container" dir={language === "ar" ? "rtl" : "ltr"}>
       {/* Toolbar */}
       <div className="toolbar">
         <label className="upload-btn">
-          <FaUpload /> Upload Report
+          <FaUpload /> {labels.upload}
           <input
             type="file"
             accept="application/pdf"
@@ -102,13 +113,13 @@ const UploadReport = () => {
         </label>
 
         <button className="clear-btn" onClick={handleClear}>
-          <FaTrash /> Clear
+          <FaTrash /> {labels.clear}
         </button>
 
         {/* ✅ Translate To Button & Language Selector */}
         <div className="select-menu">
           <button className="translate-btn" onClick={handleTranslate}>
-            <FaLanguage /> Translate To
+            <FaLanguage /> {labels.translate}
           </button>
           <select
             className="select"
@@ -126,7 +137,7 @@ const UploadReport = () => {
             content={translatedReport || structuredReport}
             fileName="Structured_Report.pdf"
           >
-            <FaDownload /> Download
+            <FaDownload /> {labels.download}
           </PDFDownloader>
         )}
       </div>
@@ -141,9 +152,7 @@ const UploadReport = () => {
         ) : structuredReport ? (
           <ReactMarkdown>{structuredReport}</ReactMarkdown>
         ) : (
-          <p className="placeholder-text">
-            Structured report will appear here...
-          </p>
+          <p className="placeholder-text">{labels.placeholder}</p>
         )}
       </div>
     </div>

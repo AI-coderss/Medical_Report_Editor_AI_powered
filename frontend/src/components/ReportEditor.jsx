@@ -31,6 +31,7 @@ import PDFDownloader from "./PdfDownloader";
 import SignatureCanvas from "react-signature-canvas";
 import Cookies from "js-cookie";
 import Loader from "../components/Loader";
+import { useLanguage } from "./LanguageContext";
 
 // ✅ Local Storage Keys
 const REPORT_STORAGE_KEY = "savedReportContent";
@@ -101,7 +102,29 @@ function ReportEditor() {
   const [isRecording, setIsRecording] = useState(false);
   const finalTranscriptRef = useRef("");
   const lastProcessedIndexRef = useRef(0);
-
+  const { language } = useLanguage();
+  const labels = {
+    patientInfo: language === "en" ? "Patient Information" : "معلومات المريض",
+    audioTranscription: language === "en" ? "Audio Transcription" : "نسخ صوتي",
+    name: language === "en" ? "Patient Name" : "اسم المريض",
+    age: language === "en" ? "Patient Age" : "عمر المريض",
+    fileNumber: language === "en" ? "File Number" : "رقم الملف",
+    placeholderName:
+      language === "en" ? "Enter patient name" : "أدخل اسم المريض",
+    placeholderAge: language === "en" ? "Enter patient age" : "أدخل عمر المريض",
+    placeholderFile:
+      language === "en" ? "Enter patient file number" : "أدخل رقم ملف المريض",
+    enhance:
+      language === "en"
+        ? "Enhance Report with AI"
+        : "تحسين التقرير بالذكاء الاصطناعي",
+    clear: language === "en" ? "Clear 🧹" : "مسح 🧹",
+    medicalReport: language === "en" ? "Medical Report" : "التقرير الطبي",
+    placeholderEditor:
+      language === "en"
+        ? "Write your medical report here..."
+        : "اكتب تقريرك الطبي هنا...",
+  };
   const startDictation = () => {
     if (!SpeechRecognition) {
       alert("Speech Recognition API not supported in this browser.");
@@ -356,6 +379,7 @@ function ReportEditor() {
             patient_fileNumber: patientFileNumber,
             doctor_name: doctorName,
             department: department,
+            language: language,
           }),
         }
       );
@@ -395,7 +419,7 @@ function ReportEditor() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: fullText }),
+          body: JSON.stringify({ text: fullText, language: language }),
         }
       );
 
@@ -414,7 +438,7 @@ function ReportEditor() {
   };
 
   return (
-    <div className="editor-container">
+    <div className="editor-container" dir={language === "ar" ? "rtl" : "ltr"}>
       {/* Toolbar */}
       <div className="toolbar">
         <div className="toolbar-content">
@@ -511,11 +535,15 @@ function ReportEditor() {
             onClick={handleEditReport}
             disabled={loading}
           >
-            {loading ? "Editing..." : "Enhance Report with AI"}
+            {loading
+              ? language === "en"
+                ? "Editing..."
+                : "جارٍ التحرير..."
+              : labels.enhance}
           </button>
           {/* ✅ Clear Button */}
           <button className="edit-btn clear-btn" onClick={clearEditorContent}>
-            Clear 🧹
+            {labels.clear}
           </button>
 
           {/* Sidebar Toggle Button */}
@@ -538,14 +566,14 @@ function ReportEditor() {
         <div className="max-w-4xl mx-auto mt-5 p-8 bg-gradient-to-br from-white to-gray-50 rounded-3xl  space-y-10 ">
           {/* Title */}
           <h2 className="text-2xl font-bold text-center text-gray-800 tracking-tight ">
-            Patient <span>Information</span>
+            {labels.patientInfo}
           </h2>
           <div className="accordion-section">
             <div
               className="accordion-header"
               onClick={() => setShowReportRecorder(!showReportRecorder)}
             >
-              <h3>Audio Transcription</h3>
+              <h3>{labels.audioTranscription}</h3>
               <span className="accordion-toggle">
                 {showReportRecorder ? "−" : "+"}
               </span>
@@ -571,38 +599,38 @@ function ReportEditor() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 report-box ">
             <div className="flex flex-col">
               <label className="Small-medium text-gray-700 mb-2">
-                Patient Name
+                {labels.name}
               </label>
               <input
                 type="text"
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Enter patient name"
+                placeholder={labels.placeholderName}
                 className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               />
             </div>
 
             <div className="flex flex-col">
               <label className="Small-medium  font-semibold text-gray-700 mb-2">
-                Patient Age
+                {labels.age}
               </label>
               <input
                 type="text"
                 value={patientAge}
                 onChange={(e) => setPatientAge(e.target.value)}
-                placeholder="Enter patient Age"
+                placeholder={labels.placeholderAge}
                 className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               />
             </div>
             <div className="flex flex-col">
               <label className="Small-medium  font-semibold text-gray-700 mb-2">
-                Patient File Number
+                {labels.fileNumber}
               </label>
               <input
                 type="text"
                 value={patientFileNumber}
                 onChange={(e) => setpatientFileNumber(e.target.value)}
-                placeholder="Enter patient file Number"
+                placeholder={labels.placeholderFile}
                 className="px-4 py-3 rounded-xl border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               />
             </div>
@@ -611,7 +639,7 @@ function ReportEditor() {
           {/* Report Section */}
           <div className="space-y-4 border h-screen rounded mt-3 border-gray-300 textareaa">
             <h3 className="Small-medium font-bold text-gray-800 pb-2 report text-center my-[4px]">
-              Medical Report
+              {labels.medicalReport}
             </h3>
             {readyToRender && (
               <div className="relative">
@@ -627,7 +655,7 @@ function ReportEditor() {
                     <Editor
                       editorState={editorState}
                       onChange={handleEditorChange}
-                      placeholder="Write your medical report here..."
+                      placeholder={labels.placeholderEditor}
                     />
                   </div>
                 )}

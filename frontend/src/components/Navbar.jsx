@@ -3,11 +3,23 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import "../styles/Navbar.css";
+import { useLanguage } from "./LanguageContext"; // ✅ import context
 
 const Navbar = () => {
   const [activeTab, setActiveTab] = useState("templates");
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { language } = useLanguage(); // ✅ get selected language
+
+  // 🔤 Translations for English and Arabic
+  const labels = {
+    templates: language === "en" ? "Templates" : "النماذج",
+    editor: language === "en" ? "Editor" : "المحرر",
+    upload: language === "en" ? "Upload Report" : "رفع التقرير",
+    retrieve: language === "en" ? "Retrieve Report" : "استرجاع التقرير",
+    settings: language === "en" ? "Settings" : "الإعدادات",
+    logout: language === "en" ? "Logout" : "تسجيل الخروج",
+  };
 
   const handleTabClick = (tabId, path) => {
     setActiveTab(tabId);
@@ -44,35 +56,36 @@ const Navbar = () => {
             className={`tab ${activeTab === "templates" ? "active" : ""}`}
             onClick={() => handleTabClick("templates", "/template")}
           >
-            <i>📋</i>Templates
+            <i>📋</i> {labels.templates}
           </div>
           <div
             className={`tab ${activeTab === "editor" ? "active" : ""}`}
             onClick={() => handleTabClick("editor", "/editor")}
           >
-            <i> ✍️</i>Editor
+            <i>✍️</i> {labels.editor}
           </div>
           <div
             className={`tab ${activeTab === "upload" ? "active" : ""}`}
             onClick={() => handleTabClick("upload", "/upload-report")}
           >
-            <i>📤</i>Upload Report
+            <i>📤</i> {labels.upload}
           </div>
           <div
             className={`tab ${activeTab === "retrieve" ? "active" : ""}`}
             onClick={() => handleTabClick("retrieve", "/retrieve-report")}
           >
-            <i>📄</i>Retrieve Report
+            <i>📄</i> {labels.retrieve}
           </div>
           <div
             className={`tab ${activeTab === "settings" ? "active" : ""}`}
             onClick={() => handleTabClick("settings", "/settings")}
           >
-            <i>⚙️</i>Settings
+            <i>⚙️</i> {labels.settings}
           </div>
         </div>
+
         <div className="logout" onClick={handleLogout}>
-          <i>📜</i>Logout
+          <i>📜</i> {labels.logout}
         </div>
       </div>
     </div>

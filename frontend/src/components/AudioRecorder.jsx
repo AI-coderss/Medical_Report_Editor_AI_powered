@@ -5,13 +5,15 @@ import { Howl } from "howler";
 import Loader from "./Loader";
 import useTranscriptStore from "../store/useTranscriptStore";
 import "../styles/AudioRecorder.css";
+import { useLanguage } from "./LanguageContext";
 
 const AudioRecorder = ({ setFormData }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isTranscriptReady, setIsTranscriptReady] = useState(false);
-
+  const { language } = useLanguage();
+  const isArabic = language === "ar";
   const clickSound = new Howl({
     src: ["/sound.mp3"],
     volume: 0.2,
@@ -124,8 +126,8 @@ const AudioRecorder = ({ setFormData }) => {
   };
 
   return (
-    <div className="audio-recorder">
-      <h3>Medical Transcription 🎙️</h3>
+    <div className="audio-recorder" dir={language === "ar" ? "rtl" : "ltr"}>
+      <h3>{isArabic ? "النسخ الطبي 🎙️" : "Medical Transcription 🎙️"}</h3>
       <ReactMic
         record={isRecording}
         pause={isPaused}
@@ -136,16 +138,22 @@ const AudioRecorder = ({ setFormData }) => {
       />
       <div className="recorder-buttons">
         <button onClick={startRecording} disabled={isRecording && !isPaused}>
-          Record
+          {isArabic ? "بدء التسجيل" : "Record"}
         </button>
         <button onClick={stopRecording} disabled={!isRecording}>
-          Stop
+          {isArabic ? "إيقاف" : "Stop"}
         </button>
         <button onClick={togglePauseResume} disabled={!isRecording}>
-          {isPaused ? "Resume" : "Pause"}
+          {isPaused
+            ? isArabic
+              ? "استئناف"
+              : "Resume"
+            : isArabic
+            ? "إيقاف مؤقت"
+            : "Pause"}
         </button>
         <button onClick={resetRecording} disabled={!isTranscriptReady}>
-          New Recording
+          {isArabic ? "تسجيل جديد" : "New Recording"}
         </button>
       </div>
       {loading && (

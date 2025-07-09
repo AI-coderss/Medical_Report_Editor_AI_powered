@@ -2,6 +2,7 @@
 import React from "react";
 import "../styles/MistakeSidebar.css";
 import { Close, Visibility, VisibilityOff } from "@mui/icons-material";
+import { useLanguage } from "./LanguageContext";
 
 // Function to detect and highlight AI-suggested grammar/spelling mistakes
 const errorStrategy = (text) => {
@@ -13,10 +14,14 @@ const errorStrategy = (text) => {
   while ((match = regex.exec(text)) !== null) {
     // Push text before the mistake
     parts.push(text.substring(lastIndex, match.index));
-    
+
     // Push mistake with red underline
     parts.push(
-      <span key={match.index} className="error-span" title={`Correction: ${match[2]}`}>
+      <span
+        key={match.index}
+        className="error-span"
+        title={`Correction: ${match[2]}`}
+      >
         {match[1]}
       </span>
     );
@@ -30,10 +35,15 @@ const errorStrategy = (text) => {
 };
 
 const MistakeSidebar = ({ mistakes, onClose, isOpen, onToggle }) => {
+  const { language } = useLanguage();
+  const isArabic = language === "ar";
   return (
-    <div className={`mistake-sidebar ${isOpen ? "open" : ""}`}>
+    <div
+      className={`mistake-sidebar ${isOpen ? "open" : ""}`}
+      dir={language === "ar" ? "rtl" : "ltr"}
+    >
       <div className="mistake-header">
-        <h3>Grammar Suggestions</h3>
+        <h3>{isArabic ? "اقتراحات القواعد" : "Grammar Suggestions"}</h3>
 
         {/* Toggle Sidebar Button */}
         <button className="toggle-btn" onClick={onToggle}>
@@ -51,7 +61,7 @@ const MistakeSidebar = ({ mistakes, onClose, isOpen, onToggle }) => {
         {mistakes ? (
           <div className="mistake-text">{errorStrategy(mistakes)}</div>
         ) : (
-          <p>No mistakes found.</p>
+          <p>{isArabic ? "لا توجد أخطاء." : "No mistakes found."}</p>
         )}
       </div>
     </div>
@@ -59,8 +69,3 @@ const MistakeSidebar = ({ mistakes, onClose, isOpen, onToggle }) => {
 };
 
 export default MistakeSidebar;
-
-
-
-
-

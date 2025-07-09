@@ -12,33 +12,36 @@ import UserList from "./components/UserList";
 import MedicalReports from './components/Reports';
 import RetrieveReport from './components/RetrieveReport';
 import Setting from './components/Setting';
+import { LanguageProvider } from './components/LanguageContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
+    <LanguageProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/login" element={<Login />} />
 
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />}>
-            <Route path="add-user" element={<Signup />} />
-            <Route path="users" element={<UserList />} />
-            <Route path="reports" element={<MedicalReports />} />
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />}>
+              <Route path="add-user" element={<Signup />} />
+              <Route path="users" element={<UserList />} />
+              <Route path="reports" element={<MedicalReports />} />
+            </Route>
+            <Route path="/editor" element={<><Navbar /><ReportEditor /></>} />
+            <Route path="/retrieve-report" element={<><Navbar /><RetrieveReport /></>} />
+            <Route path="/template" element={<><Navbar /><ReportTemplate /></>} />
+            <Route path="/upload-report" element={<><Navbar /><UploadReport /></>} />
+            <Route path="/settings" element={<><Navbar /><Setting /></>} />
           </Route>
-          <Route path="/editor" element={<><Navbar /><ReportEditor /></>} />
-          <Route path="/retrieve-report" element={<><Navbar /><RetrieveReport /></>} />
-          <Route path="/template" element={<><Navbar /><ReportTemplate /></>} />
-          <Route path="/upload-report" element={<><Navbar /><UploadReport /></>} />
-          <Route path="/settings" element={<><Navbar /><Setting /></>} />
-        </Route>
 
-        {/* Catch-All Route: Redirects unknown routes to /login */}
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-    </Router>
+          {/* Catch-All Route: Redirects unknown routes to /login */}
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </Router>
+    </LanguageProvider>
   );
 }
 

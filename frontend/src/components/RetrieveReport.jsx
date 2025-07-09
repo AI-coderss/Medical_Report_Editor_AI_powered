@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import DownloadPDF from "./DownloadPDF";
 import "../styles/RetrieveReport.css";
 import "./tab.js";
+import { useLanguage } from "./LanguageContext";
 
 const RetrieveReport = () => {
   const [reports, setReports] = useState([]);
@@ -13,6 +14,29 @@ const RetrieveReport = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const { language } = useLanguage();
+  const labels = {
+    title: language === "ar" ? "التقارير الطبية" : "Medical Reports",
+    searchPlaceholder:
+      language === "ar" ? "ابحث عن تقرير..." : "Search Report...",
+    fromDate: language === "ar" ? "من التاريخ:" : "From Date:",
+    toDate: language === "ar" ? "إلى التاريخ:" : "To Date:",
+    showingReports:
+      language === "ar" ? "عرض التقارير من:" : "Showing reports for:",
+    clear: language === "ar" ? "مسح" : "Clear",
+    sno: language === "ar" ? "م." : "S. No.",
+    fileNo: language === "ar" ? "رقم الملف" : "File No.",
+    patientName: language === "ar" ? "اسم المريض" : "Patient Name",
+    patientAge: language === "ar" ? "عمر المريض" : "Patient Age",
+    doctorName: language === "ar" ? "اسم الطبيب" : "Doctor Name",
+    doctorDept: language === "ar" ? "قسم الطبيب" : "Doctor Department",
+    reportDate: language === "ar" ? "تاريخ التقرير" : "Date of Report",
+    source: language === "ar" ? "المصدر" : "Source",
+    report: language === "ar" ? "عرض التقرير" : "Report",
+    close: language === "ar" ? "إغلاق" : "Close",
+    reportModalTitle: language === "ar" ? "التقرير الطبي" : "Medical Report",
+    reportId: language === "ar" ? "معرف التقرير" : "Report Id",
+  };
 
   const handleShowReport = (report) => {
     setSelectedReport(report);
@@ -242,20 +266,20 @@ const RetrieveReport = () => {
   }, [editorReports, searchQuery, fromDate, toDate]);
 
   return (
-    <div className="container-sec">
+    <div className="container-sec" dir={language === "ar" ? "rtl" : "ltr"}>
       <div className="p-4 w-full">
         <h2 className="text-4xl text-center font-bold text-red-600 mb-4 py-5 med-header">
-          Medical Reports
+          {labels.title}
         </h2>
         <div className="inputdiv">
           <input
             type="text"
-            placeholder="Search Report..."
+            placeholder={labels.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border user-input p-2 mb-4 w-full rounded"
           />
-          <p className=" text-xl text-gray-600">From Date:</p>
+          <p className=" text-xl text-gray-600">{labels.fromDate}</p>
           <div className="flex gap-2 mb-4">
             <input
               type="date"
@@ -264,7 +288,7 @@ const RetrieveReport = () => {
               className="border user-input datepick p-2 w-full rounded"
               placeholder="From Date"
             />
-            <p className=" text-xl text-gray-600">To Date:</p>
+            <p className=" text-xl text-gray-600">{labels.toDate}</p>
             <input
               type="date"
               value={toDate}
@@ -275,7 +299,7 @@ const RetrieveReport = () => {
           </div>
           {(fromDate || toDate) && (
             <p className="mb-2 text-sm text-gray-600">
-              Showing reports for:
+              {labels.showingReports}
               <strong className="ml-1">
                 {fromDate && !toDate
                   ? ` ${fromDate}`
@@ -290,7 +314,7 @@ const RetrieveReport = () => {
                   setToDate("");
                 }}
               >
-                Clear
+                {labels.clear}
               </button>
             </p>
           )}
@@ -299,16 +323,15 @@ const RetrieveReport = () => {
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr className="bg-blue-500 text-white table-main">
-                <th className="border p-2">S. No.</th>
-                <th className="border p-2">File No.</th>
-                <th className="border p-2">Patient Name</th>
-                <th className="border p-2">Patient Age</th>
-                <th className="border p-2">Doctor Name</th>
-                <th className="border p-2">Doctor Department</th>
-                <th className="border p-2">Date of Report</th>
-                <th className="border p-2">Source</th>
-                <th className="border p-2">Report</th>
-                {/* <th className="border p-2">Actions</th> */}
+                <th className="border p-2">{labels.sno}</th>
+                <th className="border p-2">{labels.fileNo}</th>
+                <th className="border p-2">{labels.patientName}</th>
+                <th className="border p-2">{labels.patientAge}</th>
+                <th className="border p-2">{labels.doctorName}</th>
+                <th className="border p-2">{labels.doctorDept}</th>
+                <th className="border p-2">{labels.reportDate}</th>
+                <th className="border p-2">{labels.source}</th>
+                <th className="border p-2">{labels.report}</th>
               </tr>
             </thead>
             <tbody>
@@ -344,7 +367,7 @@ const RetrieveReport = () => {
                       onClick={() => handleShowReport(report)}
                       className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
                     >
-                      Show
+                      {labels.report}
                     </button>
                   </td>
                   {/* <td className="border p-2 space-x-2">
@@ -380,10 +403,10 @@ const RetrieveReport = () => {
             >
               <div className="flex-sec">
                 <h2 className="text-xl font-semibold mb-4 text-center">
-                  Medical Report
+                  {labels.reportModalTitle}
                 </h2>
                 <h3 className="text-xl font-semibold mb-4 text-center">
-                  Report Id: {selectedReport.id}
+                  {labels.reportId}: {selectedReport.id}
                 </h3>
               </div>
               <div className="max-h-96 overflow-y-auto p-4 space-y-2">
@@ -397,7 +420,7 @@ const RetrieveReport = () => {
                   onClick={closeModal}
                   className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700"
                 >
-                  Close
+                  {labels.close}
                 </button>
               </div>
             </div>

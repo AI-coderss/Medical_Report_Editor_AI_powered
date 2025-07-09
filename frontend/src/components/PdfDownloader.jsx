@@ -1,5 +1,6 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { jsPDF } from "jspdf";
+import { useLanguage } from "./LanguageContext";
 
 const formatPDFText = (rawText) => {
   if (!rawText) return "";
@@ -13,10 +14,24 @@ const formatPDFText = (rawText) => {
 
 const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
   const [loading, setLoading] = useState(false);
+  const { language } = useLanguage();
+
+  const labels = {
+    generating:
+      language === "ar" ? "جارٍ إنشاء ملف PDF..." : "Generating PDF...",
+    download: language === "ar" ? "تحميل التقرير" : "Download PDF",
+  };
+
+  const isArabic = language === "ar";
 
   const handleDownloadPDF = async () => {
     setLoading(true);
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: "p",
+      unit: "mm",
+      format: "a4",
+    });
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 10;
@@ -24,6 +39,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
     const footerHeight = 40;
     const contentWidth = pageWidth - margin * 2;
     const lineHeight = 7;
+    const xPos = isArabic ? pageWidth - margin : margin;
 
     const headerImg = "/head.png";
     const footerImg = "/foot.png";
@@ -68,7 +84,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
         const text = boldMatch[1];
         const split = doc.splitTextToSize(text, contentWidth);
         split.forEach((l) => {
-          doc.text(l, margin, y);
+          doc.text(l, xPos, y, { align: isArabic ? "right" : "left" });
           y += lineHeight;
         });
         doc.setFont("helvetica", "normal");
@@ -78,7 +94,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
       let text = trimmed;
       let prefix = "";
       if (text.startsWith("- ")) {
-        prefix = "• ";
+        prefix = isArabic ? "• " : "• ";
         text = text.slice(2);
       }
 
@@ -89,7 +105,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
           addHeaderAndFooter();
           y = headerHeight + 10;
         }
-        doc.text(l, margin, y);
+        doc.text(l, xPos, y, { align: isArabic ? "right" : "left" });
         y += lineHeight;
       }
     }
@@ -110,7 +126,6 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
     setLoading(false);
   };
 
-  // Expose the method to the parent
   useImperativeHandle(ref, () => ({
     download: handleDownloadPDF,
   }));
@@ -125,7 +140,7 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
       }`}
       disabled={loading}
     >
-      {loading ? "Generating PDF..." : "Download PDF"}
+      {loading ? labels.generating : labels.download}
     </button>
   );
 });

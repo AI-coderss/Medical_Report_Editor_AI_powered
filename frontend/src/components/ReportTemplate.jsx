@@ -5,6 +5,7 @@ import PDFDownloader from "./PdfDownloader";
 import Cookies from "js-cookie";
 import Loader from "../components/Loader";
 import { marked } from "marked";
+import { useLanguage } from "./LanguageContext"; // ✅ import context
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
@@ -31,6 +32,27 @@ function ReportTemplate() {
   const [activeField, setActiveField] = useState(null);
   const [recognition, setRecognition] = useState(null);
   const dictationBufferRef = React.useRef({});
+  const { language } = useLanguage(); // ✅ use language context
+
+  const labels = {
+    generateReport: language === "en" ? "Generate Report" : "إنشاء التقرير",
+    clear: language === "en" ? "Clear" : "مسح",
+    audioTranscription: language === "en" ? "Audio Transcription" : "نسخ الصوت",
+    medicalReport: language === "en" ? "Medical Report" : "التقرير الطبي",
+    fields: {
+      patientName: language === "en" ? "Patient Name" : "اسم المريض",
+      age: language === "en" ? "Age" : "العمر",
+      fileNumber: language === "en" ? "File Number" : "رقم الملف",
+      chiefComplaint: language === "en" ? "Chief Complaint" : "الشكوى الرئيسية",
+      personalHistory:
+        language === "en" ? "Personal History" : "التاريخ الشخصي",
+      presentIllness: language === "en" ? "Present Illness" : "المرض الحالي",
+      medicalHistory: language === "en" ? "Medical History" : "التاريخ الطبي",
+      pastHistory: language === "en" ? "Past History" : "التاريخ السابق",
+      familyHistory: language === "en" ? "Family History" : "التاريخ العائلي",
+      systemReview: language === "en" ? "System Review" : "مراجعة النظام",
+    },
+  };
 
   const startDictation = (fieldName) => {
     if (!SpeechRecognition) {
@@ -43,7 +65,6 @@ function ReportTemplate() {
     recog.interimResults = true;
     recog.lang = "en-US";
 
-    // Initialize buffer for this field
     dictationBufferRef.current[fieldName] = formData[fieldName] || "";
 
     recog.onresult = (event) => {
@@ -66,18 +87,11 @@ function ReportTemplate() {
         [fieldName]: combinedTranscript,
       }));
 
-      // Update buffer with new finalTranscript (excluding interim)
       dictationBufferRef.current[fieldName] = finalTranscript;
     };
 
-    recog.onerror = (e) => {
-      console.error("Speech recognition error:", e);
-    };
-
-    recog.onend = () => {
-      console.log("Dictation ended.");
-    };
-
+    recog.onerror = (e) => console.error("Speech recognition error:", e);
+    recog.onend = () => console.log("Dictation ended.");
     recog.start();
     setRecognition(recog);
   };
@@ -92,7 +106,10 @@ function ReportTemplate() {
   const validateForm = () => {
     let newErrors = {};
     if (formData.age && isNaN(formData.age)) {
-      newErrors.age = "Age must be a valid number.";
+      newErrors.age =
+        language === "en"
+          ? "Age must be a valid number."
+          : "يجب أن يكون العمر رقماً صحيحاً.";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -111,14 +128,15 @@ function ReportTemplate() {
     if (!validateForm()) return;
 
     const formDataToSend = new FormData();
-    Object.keys(formData).forEach((key) => {
-      formDataToSend.append(key, formData[key]);
-    });
+    Object.keys(formData).forEach((key) =>
+      formDataToSend.append(key, formData[key])
+    );
     formDataToSend.append("doctor_name", doctorName);
     formDataToSend.append("department", department);
+    formDataToSend.append("language", language);
 
     setLoading(true);
-    setCompiledReport(""); // Clear previous report
+    setCompiledReport("");
 
     try {
       const token = Cookies.get("token");
@@ -136,7 +154,6 @@ function ReportTemplate() {
         throw new Error(errorData.error || "Something went wrong");
       }
 
-      // Handle streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
@@ -147,13 +164,8 @@ function ReportTemplate() {
 
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
-
-        // Update the UI with each chunk
         setCompiledReport((prev) => prev + chunk);
       }
-
-      // Optional: Do something with the complete report
-      console.log("Complete report:", fullText);
     } catch (error) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -182,7 +194,7 @@ function ReportTemplate() {
   };
 
   return (
-    <div className="report-container">
+    <div className="report-container" dir={language === "ar" ? "rtl" : "ltr"}>
       <div className="loader-circle">
         {loading && <Loader isLoading={loading} />}
       </div>
@@ -192,10 +204,14 @@ function ReportTemplate() {
           onClick={handleSubmit}
           disabled={loading}
         >
-          {loading ? "Generating..." : "Generate Report"}
+          {loading
+            ? language === "en"
+              ? "Generating..."
+              : "جارٍ الإنشاء..."
+            : labels.generateReport}
         </button>
         <button className="clear-btn" onClick={handleClear}>
-          Clear
+          {labels.clear}
         </button>
       </div>
       <div className="flex_sec">
@@ -209,7 +225,7 @@ function ReportTemplate() {
               className="accordion-header"
               onClick={() => setShowRecorder(!showRecorder)}
             >
-              <h3>Audio Transcription</h3>
+              <h3>{labels.audioTranscription}</h3>
               <span className="accordion-toggle">
                 {showRecorder ? "−" : "+"}
               </span>
@@ -221,29 +237,19 @@ function ReportTemplate() {
 
           <div className="report-form-container">
             <form className="report-form">
-              {/* Form Fields */}
-              {[
-                "patientName",
-                "age",
-                "fileNumber",
-                "chiefComplaint",
-                "presentIllness",
-                "medicalHistory",
-                "pastHistory",
-                "familyHistory",
-                "personalHistory",
-                "systemReview",
-              ].map((field) => (
+              {Object.keys(labels.fields).map((field) => (
                 <React.Fragment key={field}>
-                  <label>{field.replace(/([A-Z])/g, " $1")}:</label>
+                  <label>{labels.fields[field]}:</label>
                   <div className="field-with-mic">
-                    {field === "chiefComplaint" ||
-                    field === "presentIllness" ||
-                    field === "medicalHistory" ||
-                    field === "pastHistory" ||
-                    field === "familyHistory" ||
-                    field === "personalHistory" ||
-                    field === "systemReview" ? (
+                    {[
+                      "chiefComplaint",
+                      "presentIllness",
+                      "medicalHistory",
+                      "pastHistory",
+                      "familyHistory",
+                      "personalHistory",
+                      "systemReview",
+                    ].includes(field) ? (
                       <textarea
                         name={field}
                         value={formData[field]}
@@ -253,9 +259,8 @@ function ReportTemplate() {
                           if (
                             e.relatedTarget &&
                             e.currentTarget.parentNode.contains(e.relatedTarget)
-                          ) {
+                          )
                             return;
-                          }
                           if (recognition) stopDictation();
                           setActiveField(null);
                         }}
@@ -271,9 +276,8 @@ function ReportTemplate() {
                           if (
                             e.relatedTarget &&
                             e.currentTarget.parentNode.contains(e.relatedTarget)
-                          ) {
+                          )
                             return;
-                          }
                           if (recognition) stopDictation();
                           setActiveField(null);
                         }}
@@ -299,7 +303,7 @@ function ReportTemplate() {
 
         <div className="report-layout one">
           <div className="compiled-report-container">
-            <h3>Medical Report</h3>
+            <h3>{labels.medicalReport}</h3>
             {compiledReport ? (
               <>
                 <PDFDownloader
@@ -325,7 +329,6 @@ function ReportTemplate() {
                       ),
                     }}
                   />
-
                   <div className="w-full mt-4">
                     <img
                       src="/foot.png"

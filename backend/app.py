@@ -49,8 +49,8 @@ app = Flask(__name__)
 # CORS(app)
 # CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://medical-report-editor-ai-powered-dsah.onrender.com"]}})
 # CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-# CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-CORS(app, origins=["https://medical-report-editor-ai-powered-dsah.onrender.com"])
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# CORS(app, origins=["https://medical-report-editor-ai-powered-dsah.onrender.com"])
 
 # MongoDB Connection (Using Connection String)
 MONGO_URI = "mongodb+srv://medical_reports:medical_reports@cluster0.1bbim.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -798,10 +798,15 @@ def correct_text_stream():
     patient_age = data.get("patient_age", "").strip()
     doctor_name = data.get("doctor_name", "Dr.Test").strip()
     department = data.get("department", "Department-Test").strip()
-
+    language = data.get("language", "en")
     if not input_text or not patient_name or not fileNumber:
         return jsonify({"error": "Missing required fields"}), 400
-
+    instruction = (
+        "Please correct and improve this medical report in Arabic:\n\n"
+        if language == "ar"
+        else "Please correct and improve this medical report in English:\n\n"
+    )
+    input_text = instruction + input_text
     session_id = str(uuid4())
     chat_sessions[session_id] = []
 
@@ -943,18 +948,29 @@ def identify_mistakes():
     try:
         data = request.get_json()
         input_text = data.get("text", "")
+        language = data.get("language", "en")
 
         if not input_text.strip():
             return jsonify({"error": "Empty text provided"}), 400
 
-        highlight_prompt = f"""
-        You are an expert proofreader. Analyze the following text and highlight spelling, grammar, and language mistakes.
-        - **Mistakes should be bold and underlined in red.**
-        - **Next to each mistake, suggest the correct word inside parentheses.**
-        - **Keep the rest of the text unchanged.**
+        if language == "ar":
+            highlight_prompt = f"""
+            أنت مدقق لغوي محترف. قم بتحليل النص التالي وحدد الأخطاء الإملائية والنحوية وأخطاء اللغة.
+            - **ضع الأخطاء بخط عريض وتحتها خط باللون الأحمر.**
+            - **بجانب كل خطأ، اقترح الكلمة الصحيحة داخل قوسين.**
+            - **اترك بقية النص دون تغيير.**
 
-        {input_text}
-        """
+            {input_text}
+            """
+        else:
+            highlight_prompt = f"""
+            You are an expert proofreader. Analyze the following text and highlight spelling, grammar, and language mistakes.
+            - **Mistakes should be bold and underlined in red.**
+            - **Next to each mistake, suggest the correct word inside parentheses.**
+            - **Keep the rest of the text unchanged.**
+
+            {input_text}
+            """
 
         response = client.chat.completions.create(
             model="gpt-4",
@@ -985,7 +1001,7 @@ def compile_report_stream():
         doctor_id = get_jwt_identity()
         doctor_name = request.form.get("doctor_name", "Dr.Test").strip()
         department = request.form.get("department", "Department-Test").strip()
-
+        language = request.form.get("language", "en") 
         if not all([patient_name, age, fileNumber]):
             return jsonify({"error": "Missing required patient fields"}), 400
 
@@ -995,9 +1011,14 @@ def compile_report_stream():
         def generate():
             answer = ""
             try:
+                prompt_language_instruction = (
+                        "Please generate the report in Arabic."
+                        if language == "ar"
+                        else "Please generate the report in English."
+                ) 
                 # Prepare the full input with all required variables
                 full_input = {
-                    "input": f"Generate medical report for {patient_name}, {age} years old",
+                    "input": f"{prompt_language_instruction} Generate medical report for {patient_name}, {age} years old",
                     "chat_history": chat_sessions[session_id],
                     # Context variables for the report template
                     "patient_name": patient_name,

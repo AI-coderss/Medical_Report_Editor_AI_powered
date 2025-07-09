@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Player } from "@lottiefiles/react-lottie-player";
 import "../styles/Loader.css";
+import { useLanguage } from "./LanguageContext";
 
 const Loader = ({ isLoading }) => {
   const [isMobile, setIsMobile] = useState(false);
-
+  const { language } = useLanguage();
+  const isArabic = language === "ar";
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768); // Set breakpoint for mobile
@@ -66,17 +68,14 @@ const Loader = ({ isLoading }) => {
         style={playerStyle}
       />
       <div className="loader-container">
-        <div className="animated-text">
-          <div className="animated-text__letter">G</div>
-          <div className="animated-text__letter">e</div>
-          <div className="animated-text__letter">n</div>
-          <div className="animated-text__letter">e</div>
-          <div className="animated-text__letter">r</div>
-          <div className="animated-text__letter">a</div>
-          <div className="animated-text__letter">t</div>
-          <div className="animated-text__letter">i</div>
-          <div className="animated-text__letter">n</div>
-          <div className="animated-text__letter">g</div>
+        <div className="animated-text" dir={language === "ar" ? "rtl" : "ltr"}>
+          {(isArabic ? "جارٍ التحميل" : "Generating")
+            .split("")
+            .map((char, index) => (
+              <div key={index} className="animated-text__letter">
+                {char}
+              </div>
+            ))}
           <div className="animated-text__letter">⚈</div>
           <div className="animated-text__letter">⚈</div>
           <div className="animated-text__letter">⚈</div>

@@ -1,32 +1,45 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import Cookies from "js-cookie";
+import { useLanguage } from "./LanguageContext";
 
 const formatReportForPDF = (rawText) => {
   if (!rawText) return "";
 
   return rawText
-    .replace(/^##\s*(.+)/gm, "**$1**") // Convert headings to bold markdown
-    .replace(/\n•/g, "\n-") // Normalize bullets
-    .replace(/\r/g, "") // Remove carriage returns
+    .replace(/^##\s*(.+)/gm, "**$1**")
+    .replace(/\n•/g, "\n-")
+    .replace(/\r/g, "")
     .trim();
 };
 
 const DownloadPDF = ({ report }) => {
   const [loading, setLoading] = useState(false);
+  const { language } = useLanguage();
+  const isArabic = language === "ar";
+
+  const labels = {
+    generating: isArabic ? "جارٍ إنشاء ملف PDF..." : "Generating PDF...",
+    download: isArabic ? "تحميل التقرير" : "Download PDF",
+  };
 
   const handleDownloadPDF = async () => {
-    setLoading(true); // Show loader
+    setLoading(true);
 
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: "p",
+      unit: "mm",
+      format: "a4",
+    });
+
     const headerImg = "/head.png";
     const footerImg = "/foot.png";
+    const stampImg = "/stamp.png";
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 10;
     const contentWidth = pageWidth - margin * 2;
-    const contentHeight = pageHeight - 80;
 
     let y = 50;
 
@@ -44,25 +57,6 @@ const DownloadPDF = ({ report }) => {
     const formattedText = formatReportForPDF(rawText);
     const splitText = doc.splitTextToSize(formattedText, contentWidth);
 
-    // splitText.forEach((line) => {
-    //   if (y + 10 > pageHeight - 40) {
-    //     doc.addPage();
-    //     addHeaderAndFooter();
-    //     y = 50;
-    //   }
-
-    //   if (/^\*\*(.*?)\*\*$/.test(line.trim())) {
-    //     const boldText = line.trim().replace(/^\*\*|\*\*$/g, "");
-    //     doc.setFont("helvetica", "bold");
-    //     doc.text(boldText, margin, y);
-    //     doc.setFont("helvetica", "normal");
-    //   } else {
-    //     doc.text(line, margin, y);
-    //   }
-
-    //   y += 7;
-    // });
-
     splitText.forEach((line) => {
       if (y + 10 > pageHeight - 40) {
         doc.addPage();
@@ -70,14 +64,12 @@ const DownloadPDF = ({ report }) => {
         y = 50;
       }
 
-      // Handle bullet points
       if (line.trim().startsWith("- ")) {
         line = "• " + line.trim().substring(2);
       }
 
-      // Split line by bold markdown (**) and apply styles
-      const parts = line.split(/(\*\*.*?\*\*)/g); // Capture bold sections
-      let x = margin;
+      const parts = line.split(/(\*\*.*?\*\*)/g); // bold sections
+      let x = isArabic ? pageWidth - margin : margin;
 
       parts.forEach((part) => {
         if (!part) return;
@@ -90,9 +82,15 @@ const DownloadPDF = ({ report }) => {
         }
 
         const partWidth = doc.getTextWidth(part);
-        if (x + partWidth > pageWidth - margin) {
+        if (isArabic) x -= partWidth;
+
+        if (
+          (isArabic && x < margin) ||
+          (!isArabic && x + partWidth > pageWidth - margin)
+        ) {
           y += 7;
-          x = margin;
+          x = isArabic ? pageWidth - margin : margin;
+
           if (y + 10 > pageHeight - 40) {
             doc.addPage();
             addHeaderAndFooter();
@@ -100,42 +98,32 @@ const DownloadPDF = ({ report }) => {
           }
         }
 
-        doc.text(part, x, y);
-        x += partWidth;
+        doc.text(part, x, y, { align: isArabic ? "right" : "left" });
+
+        if (!isArabic) x += partWidth;
+        else x -= 2; // spacing for next part in RTL
       });
 
       y += 7;
     });
 
-    y += 15;
-    doc.setFont("helvetica", "bold");
-    doc.setFont("helvetica", "normal");
+    await new Promise((res) => setTimeout(res, 500));
 
-    // Simulate processing delay (optional, for realism)
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    // Stamp image settings
-    const stampImg = "/stamp.png"; // Update path if needed
     const stampWidth = 40;
     const stampHeight = 40;
 
-    // Check if there's space for the stamp; if not, add new page
     if (y + stampHeight + 10 > pageHeight - 40) {
       doc.addPage();
       addHeaderAndFooter();
       y = 50;
     }
 
-    // Place the stamp at bottom-right corner above footer
-    // const stampX = pageWidth - margin - stampWidth;
-    // const stampY = pageHeight - 40 - stampHeight - 10; // 40 = footer height
-    // Stamp position based on current y
-    const stampX = margin; // Or any x-position you want
+    const stampX = margin;
     const stampY = y;
-
     doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
 
     doc.save(`Compiled_Report_${report.patient_name}.pdf`);
-    setLoading(false); // Hide loader
+    setLoading(false);
   };
 
   return (
@@ -148,7 +136,7 @@ const DownloadPDF = ({ report }) => {
       }`}
       disabled={loading}
     >
-      {loading ? "Generating PDF..." : "Download PDF"}
+      {loading ? labels.generating : labels.download}
     </button>
   );
 };
