@@ -1307,38 +1307,67 @@ def translate_text():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def speech_to_text(audio_data_path):
+def speech_to_text(audio_data_path,language="en"):
     with open(audio_data_path, "rb") as audio_file:
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
             response_format="text",
-            file=audio_file
+            file=audio_file,
+            language=language 
         )
     return {"text": transcript}
 
-def extract_fields(transcript):
+def extract_fields(transcript, language="en"):
+    # English headings
+    headings = [
+        "**Patient Name:**",
+        "**Age:**",
+        "**File Number:**",
+        "**Chief Complaint:**",
+        "**Present Illness:**",
+        "**Medical History:**",
+        "**Past History:**",
+        "**Family History:**",
+        "**Personal History:**",
+        "**System Review:**"
+    ]
+
+    arabic_instruction = """
+IMPORTANT:
+- Only translate the content of each field to formal Arabic.
+- DO NOT translate the headings — keep them exactly as shown below.
+- Make sure each field is accurate, clear, and medical in tone.
+- If a field is not mentioned in the transcript, write "غير مذكور".
+"""
+
+    english_instruction = """
+IMPORTANT:
+- Use professional English for both headings and content.
+- If a field is not mentioned, write "Not mentioned".
+"""
+
+    instructions = arabic_instruction if language == "ar" else english_instruction
+
     prompt = f"""
-        You are a medical transcription service provider. Your main task is to extract all relevant fields of text from the transcript: {transcript}
-        and display them in a user form format. Please strictly adhere to the following format template, use medical terms:
-        **Patient Name:**
-        **Age:**
-        **File Number:**
-        **Chief Complaint:**
-        **Present Illness:**
-        **Medical History:**
-        **Past History:**
-        **Family History:**
-        **Personal History:**
-        **System Review:**
-        Display each field on a new line, do not combine them into one sentence. Your main job is to facilitate data entry for doctors using medical terminologies to describe the cases.
-    """
+You are a medical transcription assistant. Extract the following fields from the transcript.
+
+Transcript:
+{transcript}
+
+{instructions}
+
+Format:
+{chr(10).join(headings)}
+"""
+
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a highly skilled multilingual medical assistant."},
             {"role": "user", "content": prompt}
         ]
     )
+
     return response.choices[0].message.content
 
 def extract_between(text, start_marker, end_marker=None):
@@ -1357,6 +1386,7 @@ def transcribe():
     if "audio_data" not in request.files:
         return jsonify({"error": "No audio file provided"}), 400  
     audio_file = request.files["audio_data"]
+    language = request.form.get("language", "en") 
     supported_formats = ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']
     file_extension = audio_file.filename.split('.')[-1].lower()
     if file_extension not in supported_formats:
@@ -1365,7 +1395,7 @@ def transcribe():
         audio_file.save(temp_audio.name)
         temp_audio_path = temp_audio.name
     try:
-        transcript_result = speech_to_text(temp_audio_path)
+        transcript_result = speech_to_text(temp_audio_path, language=language)
     finally:
         os.remove(temp_audio_path)
 
@@ -1375,11 +1405,12 @@ def transcribe():
 def extract():
     data = request.get_json()
     transcript = data.get("transcript", "")
+    language = data.get("language", "en") 
     if not transcript:
         return jsonify({"error": "No transcript provided"}), 400
 
     try:
-        fields_result = extract_fields(transcript)
+        fields_result = extract_fields(transcript,language=language)
         print("Fields Result:", fields_result)
         fields = {
             "patientName": extract_between(fields_result, "**Patient Name:**", "**Age:**"),
@@ -1409,17 +1440,54 @@ def handle_error(e):
 def extract_report_fields():
     data = request.get_json()
     transcript = data.get("transcript", "")
+    language = data.get("language", "en")
+
     if not transcript:
         return jsonify({"error": "No transcript provided"}), 400
 
-    prompt = f"""
-You are an AI medical assistant. From the transcript below, generate a **well-structured** and **formatted** medical report using the format below:
-Important - Do not use Markdown-style formatting, symbols like -, or **.
+    if language == "ar":
+        instructions = """
+Generate a well-structured medical report based on the following transcript.
+Translate the *content only* into formal Arabic.
+Keep the section headings exactly as shown (in English).
+Do NOT use Markdown formatting, symbols like '-', '*', etc.
+
+If a section is not mentioned, leave it blank.
+
+Transcript:
+""" + transcript + """
+
+Format (do not change headings):
+Chief Complaint:
+...
+
+Present Illness:
+...
+
+Medical History:
+...
+
+Family History:
+...
+
+Personal History:
+...
+
+System Review:
+...
+"""
+    else:
+        instructions = f"""
+Generate a well-structured and formatted medical report based on the following transcript.
+
+Do NOT use Markdown formatting, symbols like '-', '*', etc.
+
+If a section is not mentioned, leave it blank.
+
 Transcript:
 {transcript}
 
-Follow this output format strictly(if any of the data is unavaliable keep it empty):
-
+Format:
 Chief Complaint:
 ...
 
@@ -1439,14 +1507,15 @@ System Review:
 ...
 """
 
-    resp = client.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a helpful medical assistant."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": instructions}
         ]
     )
-    result = resp.choices[0].message.content
+
+    result = response.choices[0].message.content
 
     return jsonify({
         "medicalReport": result

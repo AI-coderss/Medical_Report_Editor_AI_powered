@@ -52,7 +52,7 @@ const AudioRecorderForReportEditor = ({
 
       const { data: fields } = await axios.post(
         "https://medical-report-editor-ai-powered-backend.onrender.com/extract_report_fields",
-        { transcript }
+        { transcript, language: language === "ar" ? "ar" : "en" }
       );
 
       setPatientName(fields.patientName || "");

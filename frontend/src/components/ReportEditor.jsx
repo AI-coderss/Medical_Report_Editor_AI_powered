@@ -134,7 +134,7 @@ function ReportEditor() {
     const recog = new SpeechRecognition();
     recog.continuous = true;
     recog.interimResults = true;
-    recog.lang = "en-US";
+    recog.lang = language === "ar" ? "ar-SA" : "en-US";
     recog.maxAlternatives = 1;
 
     // Initialize with current editor content
@@ -656,6 +656,7 @@ function ReportEditor() {
                       editorState={editorState}
                       onChange={handleEditorChange}
                       placeholder={labels.placeholderEditor}
+                      textAlignment={language === "ar" ? "right" : "left"}
                     />
                   </div>
                 )}

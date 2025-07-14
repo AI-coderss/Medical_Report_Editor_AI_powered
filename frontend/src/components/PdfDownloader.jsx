@@ -1,6 +1,9 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
-import { jsPDF } from "jspdf";
 import { useLanguage } from "./LanguageContext";
+import { applyAmiriFont } from "../fonts/Amiri-Regular-normal.js";
+import { jsPDF } from "jspdf";
+
+applyAmiriFont(jsPDF);
 
 const formatPDFText = (rawText) => {
   if (!rawText) return "";
@@ -60,7 +63,13 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
 
     addHeaderAndFooter();
     doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
+
+    // 👉 Set font depending on language
+    if (isArabic) {
+      doc.setFont("Amiri");
+    } else {
+      doc.setFont("helvetica", "normal");
+    }
 
     const formattedContent = formatPDFText(content);
     const lines = formattedContent.split("\n");
@@ -80,21 +89,27 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
 
       const boldMatch = /^\*\*(.*?)\*\*$/.exec(trimmed);
       if (boldMatch) {
-        doc.setFont("helvetica", "bold");
         const text = boldMatch[1];
+        if (isArabic) doc.setFont("Amiri", "normal");
+        else doc.setFont("helvetica", "bold");
+
         const split = doc.splitTextToSize(text, contentWidth);
         split.forEach((l) => {
-          doc.text(l, xPos, y, { align: isArabic ? "right" : "left" });
+          doc.text(l, xPos, y, {
+            align: isArabic ? "right" : "left",
+            lang: isArabic ? "ar" : "en",
+          });
           y += lineHeight;
         });
-        doc.setFont("helvetica", "normal");
+
+        if (!isArabic) doc.setFont("helvetica", "normal");
         continue;
       }
 
       let text = trimmed;
       let prefix = "";
       if (text.startsWith("- ")) {
-        prefix = isArabic ? "• " : "• ";
+        prefix = "• ";
         text = text.slice(2);
       }
 
@@ -105,12 +120,16 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
           addHeaderAndFooter();
           y = headerHeight + 10;
         }
-        doc.text(l, xPos, y, { align: isArabic ? "right" : "left" });
+        doc.text(l, xPos, y, {
+          align: isArabic ? "right" : "left",
+          lang: isArabic ? "ar" : "en",
+        });
         y += lineHeight;
       }
     }
 
     await new Promise((resolve) => setTimeout(resolve, 400));
+
     const stampImg = "/stamp.png";
     const stampWidth = 40;
     const stampHeight = 40;

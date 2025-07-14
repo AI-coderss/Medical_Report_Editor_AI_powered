@@ -19,11 +19,13 @@ const Setting = () => {
   }, []);
 
   useEffect(() => {
-    fetch("/departments.json")
+    const file =
+      language === "ar" ? "/departments_ar.json" : "/departments_en.json";
+    fetch(file)
       .then((res) => res.json())
       .then((data) => setDepartments(data))
       .catch((err) => console.error("Failed to fetch departments:", err));
-  }, []);
+  }, [language]); // 🔁 refetch when language changes
 
   const handleSubmit = (e) => {
     e.preventDefault();

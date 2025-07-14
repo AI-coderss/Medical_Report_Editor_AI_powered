@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
-import Cookies from "js-cookie";
 import { useLanguage } from "./LanguageContext";
+import { applyAmiriFont } from "../fonts/Amiri-Regular-normal";
+
+// ✅ Register Amiri font globally
+applyAmiriFont(jsPDF);
 
 const formatReportForPDF = (rawText) => {
   if (!rawText) return "";
@@ -40,7 +43,8 @@ const DownloadPDF = ({ report }) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 10;
     const contentWidth = pageWidth - margin * 2;
-
+    const lineHeight = 7;
+    const xPos = isArabic ? pageWidth - margin : margin;
     let y = 50;
 
     const addHeaderAndFooter = () => {
@@ -50,78 +54,59 @@ const DownloadPDF = ({ report }) => {
 
     addHeaderAndFooter();
 
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
+    doc.setFont(isArabic ? "amiri" : "helvetica", "normal");
 
     const rawText = report.compiled_report || report.result;
     const formattedText = formatReportForPDF(rawText);
-    const splitText = doc.splitTextToSize(formattedText, contentWidth);
+    const lines = formattedText.split("\n");
 
-    splitText.forEach((line) => {
-      if (y + 10 > pageHeight - 40) {
+    for (const line of lines) {
+      if (y + lineHeight > pageHeight - 40) {
         doc.addPage();
         addHeaderAndFooter();
         y = 50;
       }
 
-      if (line.trim().startsWith("- ")) {
-        line = "• " + line.trim().substring(2);
+      const trimmed = line.trim();
+      if (!trimmed) {
+        y += lineHeight;
+        continue;
       }
 
-      const parts = line.split(/(\*\*.*?\*\*)/g); // bold sections
-      let x = isArabic ? pageWidth - margin : margin;
+      const boldMatch = /^\*\*(.*?)\*\*$/.exec(trimmed);
+      const textToWrite = boldMatch
+        ? boldMatch[1]
+        : trimmed.replace(/^\-\s*/, "• ");
 
-      parts.forEach((part) => {
-        if (!part) return;
+      if (boldMatch) {
+        doc.setFont(
+          isArabic ? "amiri" : "helvetica",
+          isArabic ? "normal" : "bold"
+        );
+      } else {
+        doc.setFont(isArabic ? "amiri" : "helvetica", "normal");
+      }
 
-        if (part.startsWith("**") && part.endsWith("**")) {
-          doc.setFont("helvetica", "bold");
-          part = part.slice(2, -2);
-        } else {
-          doc.setFont("helvetica", "normal");
-        }
-
-        const partWidth = doc.getTextWidth(part);
-        if (isArabic) x -= partWidth;
-
-        if (
-          (isArabic && x < margin) ||
-          (!isArabic && x + partWidth > pageWidth - margin)
-        ) {
-          y += 7;
-          x = isArabic ? pageWidth - margin : margin;
-
-          if (y + 10 > pageHeight - 40) {
-            doc.addPage();
-            addHeaderAndFooter();
-            y = 50;
-          }
-        }
-
-        doc.text(part, x, y, { align: isArabic ? "right" : "left" });
-
-        if (!isArabic) x += partWidth;
-        else x -= 2; // spacing for next part in RTL
+      const splitLines = doc.splitTextToSize(textToWrite, contentWidth);
+      splitLines.forEach((l) => {
+        doc.text(l, xPos, y, {
+          align: isArabic ? "right" : "left",
+          lang: isArabic ? "ar" : "en",
+        });
+        y += lineHeight;
       });
+    }
 
-      y += 7;
-    });
+    await new Promise((res) => setTimeout(res, 300));
 
-    await new Promise((res) => setTimeout(res, 500));
-
-    const stampWidth = 40;
-    const stampHeight = 40;
-
-    if (y + stampHeight + 10 > pageHeight - 40) {
+    if (y + 40 > pageHeight - 40) {
       doc.addPage();
       addHeaderAndFooter();
       y = 50;
     }
 
-    const stampX = margin;
-    const stampY = y;
-    doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
-
+    doc.addImage(stampImg, "PNG", margin, y, 40, 40);
     doc.save(`Compiled_Report_${report.patient_name}.pdf`);
     setLoading(false);
   };

@@ -54,7 +54,7 @@ function ReportTemplate() {
     },
   };
 
-  const startDictation = (fieldName) => {
+  const startDictation = (fieldName, language) => {
     if (!SpeechRecognition) {
       alert("Speech Recognition API not supported in this browser.");
       return;
@@ -63,7 +63,9 @@ function ReportTemplate() {
     const recog = new SpeechRecognition();
     recog.continuous = true;
     recog.interimResults = true;
-    recog.lang = "en-US";
+
+    // ✅ Set language dynamically
+    recog.lang = language === "ar" ? "ar-SA" : "en-US";
 
     dictationBufferRef.current[fieldName] = formData[fieldName] || "";
 
@@ -288,7 +290,9 @@ function ReportTemplate() {
                         type="button"
                         className={`mic-btn ${recognition ? "recording" : ""}`}
                         onClick={() =>
-                          recognition ? stopDictation() : startDictation(field)
+                          recognition
+                            ? stopDictation()
+                            : startDictation(field, language)
                         }
                       >
                         🎙️

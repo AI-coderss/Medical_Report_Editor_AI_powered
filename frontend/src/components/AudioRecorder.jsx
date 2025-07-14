@@ -71,7 +71,7 @@ const AudioRecorder = ({ setFormData }) => {
     });
     const formData = new FormData();
     formData.append("audio_data", audioFile);
-
+    formData.append("language", language);
     try {
       setLoading(true);
 
@@ -87,7 +87,7 @@ const AudioRecorder = ({ setFormData }) => {
 
       const { data: fieldsData } = await axios.post(
         "https://medical-report-editor-ai-powered-backend.onrender.com/extract_fields",
-        { transcript }
+        { transcript, language }
       );
 
       console.log("Extracted Fields:", fieldsData);
