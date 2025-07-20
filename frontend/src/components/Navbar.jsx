@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import "../styles/Navbar.css";
 import { useLanguage } from "./LanguageContext"; // ✅ import context
-
+import LanguageDropdown from "./LanguageDropdown";
 const Navbar = () => {
   const [activeTab, setActiveTab] = useState("templates");
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { language } = useLanguage(); // ✅ get selected language
+  const { language, toggleLanguage } = useLanguage(); // ✅ get selected language
 
   // 🔤 Translations for English and Arabic
   const labels = {
@@ -20,7 +20,6 @@ const Navbar = () => {
     settings: language === "en" ? "Settings" : "الإعدادات",
     logout: language === "en" ? "Logout" : "تسجيل الخروج",
   };
-
   const handleTabClick = (tabId, path) => {
     setActiveTab(tabId);
     setMenuOpen(false);
@@ -83,9 +82,20 @@ const Navbar = () => {
             <i>⚙️</i> {labels.settings}
           </div>
         </div>
+        <div class="dropdown-container">
+          <input type="checkbox" id="dropdown-toggle" class="dropdown-toggle" />
+          <label for="dropdown-toggle" class="btn">
+            ⋮
+          </label>
+          <div class="dropdown">
+            {/* Language Toggle Switch */}
+            <LanguageDropdown language={language} onChange={toggleLanguage} />
 
-        <div className="logout" onClick={handleLogout}>
-          <i>📜</i> {labels.logout}
+            <div className="logout" onClick={handleLogout}>
+              <i className="fa fa-sign-out" aria-hidden="true"></i>
+              <span className="logout-label">{labels.logout}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

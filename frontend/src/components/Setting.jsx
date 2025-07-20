@@ -46,23 +46,6 @@ const Setting = () => {
   return (
     <div className="outer" dir={language === "ar" ? "rtl" : "ltr"}>
       <div className="card shadow-lg p-4 rounded-4 setting-top">
-        {/* Language Toggle Switch */}
-        <div className="text-end mb-3">
-          <div className="language-toggle">
-            <span className="label">
-              {language === "en" ? "English" : "العربية"}
-            </span>
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={language === "ar"}
-                onChange={toggleLanguage}
-              />
-              <span className="slider round"></span>
-            </label>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit}>
           <div className="row g-4">
             <div className="col-md-6">

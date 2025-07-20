@@ -13,6 +13,9 @@ const UploadReport = () => {
   const [loading, setLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en"); // Default: English
   const { language } = useLanguage();
+  const [reviewedReport, setReviewedReport] = useState("");
+  const [hasReviewed, setHasReviewed] = useState(false);
+
   const labels = {
     upload: language === "en" ? "Upload Report" : "رفع التقرير",
     clear: language === "en" ? "Clear" : "مسح",
@@ -22,7 +25,46 @@ const UploadReport = () => {
         ? "Structured report will appear here..."
         : "سيظهر التقرير المنظم هنا...",
     download: language === "en" ? "Download" : "تحميل",
+
+    // ✅ Add these:
+    review: language === "en" ? "🧠 Review" : "🧠 مراجعة",
+    regenerate: language === "en" ? "♻️ Regenerate" : "♻️ إعادة المراجعة",
   };
+
+  const handleReview = async () => {
+    if (!structuredReport) {
+      alert("No structured report to review.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/review-report",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: structuredReport }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setReviewedReport(data.reviewed_text);
+        setTranslatedReport(""); // Clear old translation if present
+        setHasReviewed(true);
+      } else {
+        alert("Review error: " + data.error);
+      }
+    } catch (error) {
+      alert("Failed to connect to the AI backend.");
+    }
+
+    setLoading(false);
+  };
+
   // Handle PDF Upload
   const handleUpload = async (event) => {
     const file = event.target.files[0];
@@ -94,6 +136,7 @@ const UploadReport = () => {
 
   // Handle Clear Report
   const handleClear = () => {
+    setHasReviewed(false);
     setStructuredReport("");
     setTranslatedReport("");
   };
@@ -111,6 +154,11 @@ const UploadReport = () => {
             hidden
           />
         </label>
+        {structuredReport && (
+          <button className="translate-btn" onClick={handleReview}>
+            {hasReviewed ? labels.regenerate : labels.review}
+          </button>
+        )}
 
         <button className="clear-btn" onClick={handleClear}>
           <FaTrash /> {labels.clear}
@@ -134,7 +182,7 @@ const UploadReport = () => {
 
         {structuredReport && (
           <PDFDownloader
-            content={translatedReport || structuredReport}
+            content={reviewedReport || translatedReport || structuredReport}
             fileName="Structured_Report.pdf"
           >
             <FaDownload /> {labels.download}
@@ -143,11 +191,15 @@ const UploadReport = () => {
       </div>
 
       {/* ✅ Loader during processing */}
-      {loading && <Loader isLoading={loading} />}
+      <div className="loader-circle">
+        {loading && <Loader isLoading={loading} />}
+      </div>
 
       {/* ✅ Structured Report Preview using ReactMarkdown */}
       <div className="word-like-editor">
-        {translatedReport ? (
+        {reviewedReport ? (
+          <ReactMarkdown>{reviewedReport}</ReactMarkdown>
+        ) : translatedReport ? (
           <ReactMarkdown>{translatedReport}</ReactMarkdown>
         ) : structuredReport ? (
           <ReactMarkdown>{structuredReport}</ReactMarkdown>

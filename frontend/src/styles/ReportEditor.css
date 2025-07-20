@@ -272,3 +272,11 @@ button.mic-btn1 span {
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+.signature-box {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #e6f4ea;
+  border-left: 4px solid #2e7d32;
+  color: #2e7d32;
+  font-weight: bold;
+}

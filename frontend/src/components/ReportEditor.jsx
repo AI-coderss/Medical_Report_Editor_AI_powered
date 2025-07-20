@@ -13,6 +13,7 @@ import "draft-js/dist/Draft.css";
 import ReactMarkdown from "react-markdown";
 import "../styles/ReportEditor.css";
 import AudioRecorderForReportEditor from "./AudioRecorderForReportEditor";
+import Swal from "sweetalert2";
 import {
   FormatBold,
   FormatItalic,
@@ -94,7 +95,13 @@ function ReportEditor() {
   const [patientFileNumber, setpatientFileNumber] = useState("");
   const [downloadAfterEnhance, setDownloadAfterEnhance] = useState(false);
   const [showReportRecorder, setShowReportRecorder] = useState(false);
+  // const [viewAsMarkdown, setViewAsMarkdown] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [liveStreamText, setLiveStreamText] = useState("");
+
   const pdfRef = useRef();
+  const printRef = useRef();
+
   // Live Mic CODE
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -189,6 +196,31 @@ function ReportEditor() {
       // Finalize any remaining text
       updateEditor(finalTranscriptRef.current);
     }
+  };
+  const handleSubmitForApproval = () => {
+    if (!editorState.getCurrentContent().hasText()) {
+      alert("Cannot submit an empty report.");
+      return;
+    }
+
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Once submitted, the report cannot be edited.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, submit it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setIsSubmitted(true);
+        Swal.fire(
+          "Submitted!",
+          "The report has been successfully submitted.",
+          "success"
+        );
+      }
+    });
   };
 
   const updateEditor = (text) => {
@@ -308,6 +340,38 @@ function ReportEditor() {
       return <p style={{ color: "red" }}>Markdown render failed.</p>;
     }
   }
+  const handlePrint = () => {
+    const printContents = printRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=900,height=650");
+
+    if (!win) {
+      alert("Popup blocked. Please allow popups for this website.");
+      return;
+    }
+
+    win.document.write(`
+    <html>
+      <head>
+        <title>Print Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; padding: 10px; }
+          .medical { white-space: pre-wrap; }
+          .signature-box { margin-top: 20px; font-style: italic; color: green; }
+        </style>
+      </head>
+      <body>
+        ${printContents}
+        <script>
+          setTimeout(function() {
+            window.print();
+            window.close();
+          }, 500);
+        </script>
+      </body>
+    </html>
+  `);
+    win.document.close();
+  };
 
   const clearEditorContent = () => {
     const emptyState = EditorState.createEmpty(decorator);
@@ -315,6 +379,7 @@ function ReportEditor() {
     setFormattedMarkdown("");
     setReadyToRender(true);
     setMistakes(null);
+    setIsSubmitted(false);
     console.log("Clearing editor with decorator:", decorator);
     if (sigCanvas.current) {
       clearSignature();
@@ -322,6 +387,7 @@ function ReportEditor() {
     localStorage.removeItem(REPORT_STORAGE_KEY);
     localStorage.removeItem(FORMATTED_STORAGE_KEY);
     localStorage.removeItem(MISTAKES_STORAGE_KEY);
+    localStorage.removeItem(SIGNATURE_STORAGE_KEY);
   };
 
   // ✅ Delete/Backspace Works
@@ -358,8 +424,9 @@ function ReportEditor() {
     }
 
     setLoading(true);
-    setFormattedMarkdown(""); // Clear old text
-    setEditorState(EditorState.createEmpty(decorator)); // Optional: clear editor
+    setFormattedMarkdown("");
+    setEditorState(EditorState.createEmpty(decorator));
+    setLiveStreamText(""); // Clear any previous stream
 
     try {
       const token = Cookies.get("token");
@@ -389,37 +456,46 @@ function ReportEditor() {
         throw new Error(errorData.error || "Something went wrong");
       }
 
-      // 🔄 STREAM the response
+      // Stream reader
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
 
       let fullText = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
+        let chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
 
-        // Live update markdown preview
-        setFormattedMarkdown((prev) => prev + chunk);
+        // Live update stream text box
+        setLiveStreamText((prev) => prev + chunk);
       }
 
-      // Final update to the editor content
-      const correctedContent = ContentState.createFromText(fullText);
-      setEditorState(
-        EditorState.createWithContent(correctedContent, decorator)
-      );
+      // Clean final text
+      const cleanedText = fullText
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/#+\s/g, "")
+        .replace(/\*\*/g, "");
 
-      setDownloadAfterEnhance(true);
+      // Update editor
+      const contentState = ContentState.createFromText(cleanedText);
+      setEditorState(EditorState.createWithContent(contentState, decorator));
 
-      // 🧠 Mistake detection (if needed)
+      // Save for download/export
+      setFormattedMarkdown(cleanedText);
+
+      // Clear streaming display
+      setLiveStreamText("");
+
+      // Mistake detection request (optional)
       const mistakeResponse = await fetch(
         "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: fullText, language: language }),
+          body: JSON.stringify({ text: cleanedText, language: language }),
         }
       );
 
@@ -511,6 +587,21 @@ function ReportEditor() {
           >
             <FaDownload />
           </PDFDownloader>
+          {!isSubmitted && (
+            <button className="edit-btn" onClick={handleSubmitForApproval}>
+              Submit for Approval
+            </button>
+          )}
+          {isSubmitted && (
+            <button
+              className="edit-btn"
+              onClick={() => handlePrint()}
+              style={{ marginLeft: "10px" }}
+            >
+              🖨️ Print Report
+            </button>
+          )}
+
           <div className="">
             <button
               type="button"
@@ -637,27 +728,31 @@ function ReportEditor() {
           </div>
 
           {/* Report Section */}
-          <div className="space-y-4 border h-screen rounded mt-3 border-gray-300 textareaa">
+          <div
+            ref={printRef}
+            className="space-y-4 border h-screen rounded mt-3 border-gray-300 textareaa"
+          >
             <h3 className="Small-medium font-bold text-gray-800 pb-2 report text-center my-[4px]">
               {labels.medicalReport}
             </h3>
-            {readyToRender && (
-              <div className="relative">
-                {" "}
-                {/* Add relative positioning to the container */}
-                {typeof formattedMarkdown === "string" &&
-                formattedMarkdown.trim().length > 0 ? (
-                  <div className="prose max-w-none p-4 bg-white">
-                    <SafeMarkdown content={formattedMarkdown} />
-                  </div>
-                ) : (
-                  <div className="rounded-xl p-4 bg-white medical">
-                    <Editor
-                      editorState={editorState}
-                      onChange={handleEditorChange}
-                      placeholder={labels.placeholderEditor}
-                      textAlignment={language === "ar" ? "right" : "left"}
-                    />
+
+            {liveStreamText ? (
+              <div className="rounded-xl p-4 bg-white whitespace-pre-wrap">
+                {liveStreamText}
+              </div>
+            ) : (
+              <div className="rounded-xl p-4 bg-white medical">
+                <Editor
+                  editorState={editorState}
+                  onChange={handleEditorChange}
+                  placeholder={labels.placeholderEditor}
+                  textAlignment={language === "ar" ? "right" : "left"}
+                  readOnly={isSubmitted}
+                />
+                {isSubmitted && (
+                  <div className="signature-box">
+                    ✅ Electronically Signed by Dr.{" "}
+                    <strong>{doctorName}</strong>
                   </div>
                 )}
               </div>

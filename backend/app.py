@@ -129,8 +129,6 @@ You are an AI medical assistant. Generate a **well-structured** and **profession
 **Relevant Context from Similar Cases:**
 {context}
 
-This report was electronically signed by Doctor - {doctor_name}, Department - {department}.
-
 **Formatting Instructions:**
 - Use professional medical terminology
 - Structure the report with clear sections
@@ -143,7 +141,7 @@ This report was electronically signed by Doctor - {doctor_name}, Department - {d
   4. Family History
   5. Personal History
   6. System Review
-- **Do not include any concluding remarks, summaries, or statements such as 'This report provides an overview...' or 'Feel free to reach out...' at the end of the report. Only include the electronically signed line.**
+- **Do not include any concluding remarks, summaries, or statements such as 'This report provides an overview...' or 'Feel free to reach out...' at the end of the report.**
 """
 
 app.config['JWT_SECRET_KEY'] = 'my-super-secret-key-12345' 
@@ -743,10 +741,7 @@ def correct_text():
         - Professional tone
         - Adherence to standard medical documentation formats.
         - Show the patinet name and age at the top of the report like this 
-            Patient Name - {patient_name} , Patient Age - {patient_age}
-
-        - Also at the end of the report i want you to write this following 
-         This report was electronically signed by Doctor - {doctor_name} , Depratment- {department} .
+            Patient Name - {patient_name} , Patient Age - {patient_age} .
 
         **Formatting Instructions:**
         - **The report title should be bold and centered.**
@@ -806,7 +801,16 @@ def correct_text_stream():
         if language == "ar"
         else "Please correct and improve this medical report in English:\n\n"
     )
-    input_text = instruction + input_text
+    metadata_prefix = (
+    f"Patient Name: {patient_name}\n"
+    f"Patient Age: {patient_age}\n"
+    f"File Number: {fileNumber}\n"
+    f"Doctor Name: {doctor_name}\n"
+    f"Department: {department}\n\n"
+    )
+
+    input_text = instruction + metadata_prefix + input_text
+
     session_id = str(uuid4())
     chat_sessions[session_id] = []
 
@@ -1521,6 +1525,42 @@ System Review:
         "medicalReport": result
     })
 
+@app.route('/review-report', methods=['POST'])
+def review_report():
+    try:
+        data = request.get_json()
+        input_text = data.get("text", "").strip()
+
+        if not input_text:
+            return jsonify({"error": "No text provided."}), 400
+
+        # 🧠 Prompt to enhance/report the structured report
+        review_prompt = f"""
+        You are a professional medical documentation assistant.
+        Improve the following structured report by fixing grammar, improving clarity,
+        and ensuring it remains clinically accurate and professional.
+        Do not remove or fabricate information.
+        Keep the structure and section headers intact.
+
+        Here is the report:
+        {input_text}
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": review_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=2048
+        )
+
+        reviewed_text = response.choices[0].message.content.strip()
+
+        return jsonify({"reviewed_text": reviewed_text})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
