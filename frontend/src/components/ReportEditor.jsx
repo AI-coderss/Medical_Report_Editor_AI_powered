@@ -361,10 +361,14 @@ function ReportEditor() {
           body { font-family: Arial, sans-serif; margin: 20px; padding: 10px; }
           .medical { white-space: pre-wrap; }
           .signature-box { margin-top: 20px; font-style: italic; color: green; }
+          .header-img, .footer-img { width: 100%; max-width: 100%; }
         </style>
       </head>
       <body>
-        ${printContents}
+        <img src="head.jpg" alt="Header" class="header-img" />
+        <div>${printContents}</div>
+        <img src="foot.jpg" alt="Footer" class="footer-img" />
+
         <script>
           setTimeout(function() {
             window.print();
