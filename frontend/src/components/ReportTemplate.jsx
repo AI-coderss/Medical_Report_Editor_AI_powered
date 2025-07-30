@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "../styles/ReportTemplate.css";
 import AudioRecorder from "./AudioRecorder";
 import PDFDownloader from "./PdfDownloader";
@@ -6,6 +6,8 @@ import Cookies from "js-cookie";
 import Loader from "../components/Loader";
 import { marked } from "marked";
 import { useLanguage } from "./LanguageContext"; // ✅ import context
+import Swal from "sweetalert2"; // SweetAlert2
+import SendPopup from "./SendPopup";
 
 function ReportTemplate() {
   const [formData, setFormData] = useState({
@@ -23,6 +25,7 @@ function ReportTemplate() {
 
   const [errors, setErrors] = useState({});
   const [compiledReport, setCompiledReport] = useState("");
+  const compiledReportRef = useRef("");
   const [loading, setLoading] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
   const SpeechRecognition =
@@ -33,7 +36,9 @@ function ReportTemplate() {
   const [recognition, setRecognition] = useState(null);
   const dictationBufferRef = React.useRef({});
   const { language } = useLanguage(); // ✅ use language context
-
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const printRef = useRef();
+  const [showSendPopup, setShowSendPopup] = useState(false);
   const labels = {
     generateReport: language === "en" ? "Generate Report" : "إنشاء التقرير",
     clear: language === "en" ? "Clear" : "مسح",
@@ -52,6 +57,8 @@ function ReportTemplate() {
       familyHistory: language === "en" ? "Family History" : "التاريخ العائلي",
       systemReview: language === "en" ? "System Review" : "مراجعة النظام",
     },
+    approve: language === "en" ? "Approve the Report" : "وافق على التقرير",
+    print: language === "en" ? "🖨️ Print Report" : "🖨️ طباعة التقرير",
   };
 
   const startDictation = (fieldName, language) => {
@@ -124,6 +131,78 @@ function ReportTemplate() {
       setErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     }
   };
+  const handlePrint = () => {
+    const printContents = printRef.current.innerHTML;
+    const win = window.open("", "_blank", "width=900,height=650");
+
+    if (!win) {
+      alert("Popup blocked. Please allow popups for this website.");
+      return;
+    }
+
+    win.document.write(`
+    <html>
+      <head>
+        <title>Print Report</title>
+        <style>
+          @media print {
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+            }
+
+            .compiled-report {
+              padding: 1in;
+              box-sizing: border-box;
+              page-break-inside: avoid;
+            }
+
+            img {
+              max-width: 100%;
+              height: auto;
+              page-break-inside: avoid;
+              page-break-before: avoid;
+              page-break-after: avoid;
+            }
+
+            .signature-box {
+              margin-top: 2rem;
+              font-size: 1rem;
+              page-break-inside: avoid;
+            }
+
+            .compiled-markdown {
+              white-space: pre-wrap;
+              min-height: 300px;
+              page-break-inside: avoid;
+            }
+
+            .w-full {
+              width: 100%;
+            }
+
+            .mb-4, .mt-4 {
+              margin: 1rem 0;
+            }
+
+            * {
+              page-break-before: avoid;
+              page-break-after: avoid;
+              page-break-inside: avoid;
+            }
+          }
+        </style>
+      </head>
+     <body onload="window.print(); setTimeout(() => window.close(), 500);">
+       ${printContents}
+     </body>
+
+    </html>
+  `);
+
+    win.document.close();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -166,7 +245,14 @@ function ReportTemplate() {
 
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
-        setCompiledReport((prev) => prev + chunk);
+        const cleanedText = fullText
+          .replace(/\*\*(.*?)\*\*/g, "$1")
+          .replace(/#+\s/g, "")
+          .replace(/\*\*/g, "");
+        compiledReportRef.current = cleanedText;
+        setCompiledReport(compiledReportRef.current);
+
+        // setCompiledReport((prev) => prev + chunk);
       }
     } catch (error) {
       setErrors((prevErrors) => ({
@@ -215,6 +301,40 @@ function ReportTemplate() {
         <button className="clear-btn" onClick={handleClear}>
           {labels.clear}
         </button>
+        {compiledReport && (
+          <>
+            {!isSubmitted ? (
+              <button
+                className="generate-btn approveBtn"
+                onClick={async () => {
+                  const result = await Swal.fire({
+                    title: "Are you sure?",
+                    text: "Once approved, this report cannot be edited.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, approve it!",
+                    cancelButtonText: "Cancel",
+                  });
+
+                  if (result.isConfirmed) {
+                    setIsSubmitted(true);
+                    setShowSendPopup(true);
+                  }
+                }}
+              >
+                {labels.approve}
+              </button>
+            ) : (
+              <button className="generate-btn printBtn" onClick={handlePrint}>
+                {labels.print}
+              </button>
+            )}
+            <PDFDownloader
+              content={compiledReport}
+              fileName="Medical_Report.pdf"
+            />
+          </>
+        )}
       </div>
       <div className="flex_sec">
         <div
@@ -310,32 +430,53 @@ function ReportTemplate() {
             <h3>{labels.medicalReport}</h3>
             {compiledReport ? (
               <>
-                <PDFDownloader
-                  content={compiledReport}
-                  fileName="Medical_Report.pdf"
-                />
-                <div className="compiled-report text-justify px-20 pb-4">
+                <div
+                  className="compiled-report text-justify px-20 pb-4"
+                  ref={printRef}
+                >
                   <div className="w-full mb-4">
                     <img
-                      src="/head.png"
+                      src="/head.jpg"
                       alt="Header"
                       className="w-full h-auto"
                     />
                   </div>
                   <div
-                    className="compiled-markdown"
-                    dangerouslySetInnerHTML={{
-                      __html: marked(
-                        compiledReport.replace(
-                          /^\[Medical Report\]\s*-*\s*/i,
-                          ""
-                        )
-                      ),
+                    className="compiled-markdown editable-report"
+                    contentEditable={!isSubmitted}
+                    suppressContentEditableWarning={true}
+                    onInput={(e) => {
+                      compiledReportRef.current = e.currentTarget.innerText;
                     }}
-                  />
+                    style={{
+                      padding: "1rem",
+                      minHeight: "300px",
+                      whiteSpace: "pre-wrap",
+                      outline: "none",
+                    }}
+                  >
+                    {compiledReportRef.current}
+                  </div>
+
+                  {isSubmitted && (
+                    <div className="signature-box">
+                      {language === "ar" ? (
+                        <>
+                          ✅ تم التوقيع إلكترونيًا بواسطة الدكتور{" "}
+                          <strong>{doctorName}</strong>
+                        </>
+                      ) : (
+                        <>
+                          ✅ Electronically Signed by Dr.{" "}
+                          <strong>{doctorName}</strong>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div className="w-full mt-4">
                     <img
-                      src="/foot.png"
+                      src="/foot.jpg"
                       alt="Footer"
                       className="w-full h-auto"
                     />
@@ -348,6 +489,13 @@ function ReportTemplate() {
           </div>
         </div>
       </div>
+      {showSendPopup && (
+        <SendPopup
+          compiledReport={compiledReportRef.current}
+          doctorName={doctorName}
+          onClose={() => setShowSendPopup(false)}
+        />
+      )}
     </div>
   );
 }

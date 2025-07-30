@@ -35,8 +35,8 @@ const DownloadPDF = ({ report }) => {
       format: "a4",
     });
 
-    const headerImg = "/head.png";
-    const footerImg = "/foot.png";
+    const headerImg = "/head.jpg";
+    const footerImg = "/foot.jpg";
     const stampImg = "/stamp.png";
 
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -48,8 +48,8 @@ const DownloadPDF = ({ report }) => {
     let y = 50;
 
     const addHeaderAndFooter = () => {
-      doc.addImage(headerImg, "PNG", 0, 0, pageWidth, 40);
-      doc.addImage(footerImg, "PNG", 0, pageHeight - 40, pageWidth, 40);
+      doc.addImage(headerImg, "JPEG", 0, 0, pageWidth, 40);
+      doc.addImage(footerImg, "JPEG", 0, pageHeight - 40, pageWidth, 40);
     };
 
     addHeaderAndFooter();

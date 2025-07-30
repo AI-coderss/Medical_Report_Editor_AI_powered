@@ -44,16 +44,16 @@ const PDFDownloader = forwardRef(({ content, fileName }, ref) => {
     const lineHeight = 7;
     const xPos = isArabic ? pageWidth - margin : margin;
 
-    const headerImg = "/head.png";
-    const footerImg = "/foot.png";
+    const headerImg = "/head.jpg";
+    const footerImg = "/foot.jpg";
 
     let y = headerHeight + 10;
 
     const addHeaderAndFooter = () => {
-      doc.addImage(headerImg, "PNG", 0, 0, pageWidth, headerHeight);
+      doc.addImage(headerImg, "JPEG", 0, 0, pageWidth, headerHeight);
       doc.addImage(
         footerImg,
-        "PNG",
+        "JPEG",
         0,
         pageHeight - footerHeight,
         pageWidth,

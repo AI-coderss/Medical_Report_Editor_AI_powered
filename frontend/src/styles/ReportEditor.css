@@ -280,3 +280,6 @@ button.mic-btn1 span {
   color: #2e7d32;
   font-weight: bold;
 }
+.approveBtn {
+  background-color: #398d10 !important;
+}

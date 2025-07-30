@@ -1,0 +1,107 @@
+.send-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 370px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  padding: 16px;
+  font-family: sans-serif;
+  height: fit-content;
+  background-color: #f0f0f0;
+}
+.send-popup-header h3 {
+  font-weight: 600;
+  font-size: 19px;
+  color: #000;
+}
+
+.send-popup-body input {
+  background-color: #fff;
+}
+select.country-select {
+  background-color: #fff;
+}
+.send-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.send-popup-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.send-popup-body label {
+  font-size: 14px;
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.send-popup-body input[type="email"],
+.phone-number {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.phone-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.country-code {
+  width: 60px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.send-btn {
+  width: 40%;
+  margin-top: 10px;
+  background-color: #2563eb;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.send-btn:hover {
+  background-color: #1e40af;
+}
+
+.required {
+  color: red;
+}
+.btn-close {
+  background-color: transparent;
+  font-size: 13px;
+  color: gainsboro;
+  border: 1px solid gainsboro;
+  border-radius: 100%;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.send-popup .report-box input,
+select {
+  color: #868686;
+}
+@media screen and (max-width: 768px) {
+  .send-btn {
+    width: 100%;
+  }
+}

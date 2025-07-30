@@ -215,7 +215,14 @@ button {
   cursor: pointer;
   margin-block: 2px;
 }
-
+.signature-box {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #e6f4ea;
+  border-left: 4px solid #2e7d32;
+  color: #2e7d32;
+  font-weight: bold;
+}
 button:hover {
   background: #05c0f9;
 }
@@ -390,7 +397,9 @@ h3 {
   color: #e53935;
   animation: pulse 1s infinite;
 }
-
+.approveBtn {
+  background-color: #398d10 !important;
+}
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -406,4 +415,37 @@ h3 {
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+@media print {
+  .compiled-report-container {
+    page-break-inside: avoid;
+    page-break-before: avoid;
+    page-break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .compiled-report {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .compiled-markdown,
+  .signature-box,
+  .w-full {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  body,
+  html {
+    margin: 0;
+    padding: 0;
+    height: auto !important;
+    zoom: 0.9; /* Optional: shrink content to fit one page */
+  }
+
+  img {
+    max-height: 100%;
+    page-break-inside: avoid;
+  }
 }

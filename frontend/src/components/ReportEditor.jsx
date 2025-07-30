@@ -33,7 +33,7 @@ import SignatureCanvas from "react-signature-canvas";
 import Cookies from "js-cookie";
 import Loader from "../components/Loader";
 import { useLanguage } from "./LanguageContext";
-
+import SendPopup from "./SendPopup";
 // ✅ Local Storage Keys
 const REPORT_STORAGE_KEY = "savedReportContent";
 const FORMATTED_STORAGE_KEY = "savedFormattedMarkdown";
@@ -98,6 +98,7 @@ function ReportEditor() {
   // const [viewAsMarkdown, setViewAsMarkdown] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [liveStreamText, setLiveStreamText] = useState("");
+  const [showSendPopup, setShowSendPopup] = useState(false);
 
   const pdfRef = useRef();
   const printRef = useRef();
@@ -131,6 +132,8 @@ function ReportEditor() {
       language === "en"
         ? "Write your medical report here..."
         : "اكتب تقريرك الطبي هنا...",
+    approve: language === "en" ? "Approve the Report" : "وافق على التقرير",
+    print: language === "en" ? "🖨️ Print Report" : "🖨️ طباعة التقرير",
   };
   const startDictation = () => {
     if (!SpeechRecognition) {
@@ -220,6 +223,7 @@ function ReportEditor() {
           "success"
         );
       }
+      setShowSendPopup(true);
     });
   };
 
@@ -580,16 +584,24 @@ function ReportEditor() {
             🗑️
           </button>
           {/* ✅ Download Button */}
-          <PDFDownloader
-            ref={pdfRef}
-            content={formattedMarkdown}
-            fileName="Medical_Report.pdf"
+
+          <button
+            className="edit-btn"
+            onClick={handleEditReport}
+            disabled={loading}
           >
-            <FaDownload />
-          </PDFDownloader>
+            {loading
+              ? language === "en"
+                ? "Editing..."
+                : "جارٍ التحرير..."
+              : labels.enhance}
+          </button>
           {!isSubmitted && (
-            <button className="edit-btn" onClick={handleSubmitForApproval}>
-              Submit for Approval
+            <button
+              className="edit-btn approveBtn"
+              onClick={handleSubmitForApproval}
+            >
+              {labels.approve}
             </button>
           )}
           {isSubmitted && (
@@ -598,7 +610,7 @@ function ReportEditor() {
               onClick={() => handlePrint()}
               style={{ marginLeft: "10px" }}
             >
-              🖨️ Print Report
+              {labels.print}
             </button>
           )}
 
@@ -620,18 +632,13 @@ function ReportEditor() {
               )}
             </button>
           </div>
-          {/* Edit Button */}
-          <button
-            className="edit-btn"
-            onClick={handleEditReport}
-            disabled={loading}
+          <PDFDownloader
+            ref={pdfRef}
+            content={formattedMarkdown}
+            fileName="Medical_Report.pdf"
           >
-            {loading
-              ? language === "en"
-                ? "Editing..."
-                : "جارٍ التحرير..."
-              : labels.enhance}
-          </button>
+            <FaDownload />
+          </PDFDownloader>
           {/* ✅ Clear Button */}
           <button className="edit-btn clear-btn" onClick={clearEditorContent}>
             {labels.clear}
@@ -751,8 +758,17 @@ function ReportEditor() {
                 />
                 {isSubmitted && (
                   <div className="signature-box">
-                    ✅ Electronically Signed by Dr.{" "}
-                    <strong>{doctorName}</strong>
+                    {language === "ar" ? (
+                      <>
+                        ✅ تم التوقيع إلكترونيًا بواسطة الدكتور{" "}
+                        <strong>{doctorName}</strong>
+                      </>
+                    ) : (
+                      <>
+                        ✅ Electronically Signed by Dr.{" "}
+                        <strong>{doctorName}</strong>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -767,6 +783,12 @@ function ReportEditor() {
         onToggle={toggleSidebar}
         onClose={() => setSidebarOpen(false)}
       />
+      {showSendPopup && (
+        <SendPopup
+          onClose={() => setShowSendPopup(false)}
+          pdfData={formattedMarkdown} // Or pass PDF blob/download URL
+        />
+      )}
     </div>
   );
 }
