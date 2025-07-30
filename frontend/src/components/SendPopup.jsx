@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../styles/SendPopup.css";
 import Swal from "sweetalert2";
 import { useLanguage } from "../components/LanguageContext";
+import { generatePDFBlob } from "./pdfGenerator";
 
 const countryCodes = [
   { code: "+93", label: "Afghanistan 🇦🇫" },
@@ -60,7 +61,7 @@ const countryCodes = [
   { code: "+967", label: "Yemen 🇾🇪" },
 ];
 
-function SendPopup({ onClose, pdfData }) {
+function SendPopup({ onClose, compiledReport, doctorName }) {
   const [countryCode, setCountryCode] = useState("+966");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [gmail, setGmail] = useState("");
@@ -104,6 +105,7 @@ function SendPopup({ onClose, pdfData }) {
 
     setLoading(true);
     try {
+      const pdfBase64 = await generatePDFBlob(compiledReport, language);
       const response = await fetch(
         "https://n8n-latest-h3pu.onrender.com/webhook/cd5f113e-9c5a-4fd2-a0c1-28ff0afc94d4",
         {
@@ -114,7 +116,7 @@ function SendPopup({ onClose, pdfData }) {
           body: JSON.stringify({
             whatsapp: fullPhone,
             gmail,
-            report: pdfData,
+            report: pdfBase64,
           }),
         }
       );

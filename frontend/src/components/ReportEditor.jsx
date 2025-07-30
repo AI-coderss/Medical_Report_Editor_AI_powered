@@ -785,8 +785,8 @@ function ReportEditor() {
       />
       {showSendPopup && (
         <SendPopup
+          compiledReport={formattedMarkdown}
           onClose={() => setShowSendPopup(false)}
-          pdfData={formattedMarkdown} // Or pass PDF blob/download URL
         />
       )}
     </div>
