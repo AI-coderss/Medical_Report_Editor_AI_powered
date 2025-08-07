@@ -3,7 +3,6 @@ import { jsPDF } from "jspdf";
 import { useLanguage } from "./LanguageContext";
 import { applyAmiriFont } from "../fonts/Amiri-Regular-normal";
 
-// ✅ Register Amiri font globally
 applyAmiriFont(jsPDF);
 
 const formatReportForPDF = (rawText) => {
@@ -25,6 +24,8 @@ const DownloadPDF = ({ report }) => {
     generating: isArabic ? "جارٍ إنشاء ملف PDF..." : "Generating PDF...",
     download: isArabic ? "تحميل التقرير" : "Download PDF",
   };
+
+  const doctorName = localStorage.getItem("doctorName") || "Dr. Test";
 
   const handleDownloadPDF = async () => {
     setLoading(true);
@@ -55,7 +56,7 @@ const DownloadPDF = ({ report }) => {
     addHeaderAndFooter();
 
     doc.setFontSize(12);
-    doc.setFont(isArabic ? "amiri" : "helvetica", "normal");
+    doc.setFont(isArabic ? "Amiri" : "helvetica", "normal");
 
     const rawText = report.compiled_report || report.result;
     const formattedText = formatReportForPDF(rawText);
@@ -80,12 +81,9 @@ const DownloadPDF = ({ report }) => {
         : trimmed.replace(/^\-\s*/, "• ");
 
       if (boldMatch) {
-        doc.setFont(
-          isArabic ? "amiri" : "helvetica",
-          isArabic ? "normal" : "bold"
-        );
+        doc.setFont(isArabic ? "Amiri" : "helvetica", "bold");
       } else {
-        doc.setFont(isArabic ? "amiri" : "helvetica", "normal");
+        doc.setFont(isArabic ? "Amiri" : "helvetica", "normal");
       }
 
       const splitLines = doc.splitTextToSize(textToWrite, contentWidth);
@@ -98,15 +96,58 @@ const DownloadPDF = ({ report }) => {
       });
     }
 
-    await new Promise((res) => setTimeout(res, 300));
+    // --- Signature Box ---
+    const signatureText = isArabic
+      ? `تم التوقيع إلكترونيًا بواسطة الدكتور ${doctorName}`
+      : `Electronically Signed by Dr. ${doctorName}`;
 
-    if (y + 40 > pageHeight - 40) {
-      doc.addPage();
-      addHeaderAndFooter();
-      y = 50;
-    }
+    const sigBoxX = margin;
+    const sigBoxY = y + 10;
+    const sigBoxWidth = contentWidth;
+    const sigBoxHeight = 10;
 
-    doc.addImage(stampImg, "PNG", margin, y, 40, 40);
+    // Background
+    doc.setFillColor(230, 244, 234); // #e6f4ea
+    doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight, "F");
+
+    // Border-left
+    doc.setDrawColor(46, 125, 50); // #2e7d32
+    doc.setLineWidth(1);
+    doc.line(sigBoxX, sigBoxY, sigBoxX, sigBoxY + sigBoxHeight);
+
+    // Text
+    doc.setTextColor(46, 125, 50); // #2e7d32
+    doc.setFont(isArabic ? "Amiri" : "helvetica", "bold");
+    doc.text(
+      signatureText,
+      isArabic ? pageWidth - margin : margin + 2,
+      sigBoxY + 7,
+      {
+        align: isArabic ? "right" : "left",
+        lang: isArabic ? "ar" : "en",
+      }
+    );
+
+    y = sigBoxY + sigBoxHeight + 5;
+
+    // --- Centered Stamp ---
+    const stampWidth = 40;
+    const stampHeight = 40;
+    const stampX = (pageWidth - stampWidth) / 2;
+    const stampY = y + 10;
+
+    const padding = 2;
+    doc.setFillColor(255, 255, 255); // white background padding
+    doc.rect(
+      stampX - padding,
+      stampY - padding,
+      stampWidth + padding * 2,
+      stampHeight + padding * 2,
+      "F"
+    );
+
+    doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
+
     doc.save(`Compiled_Report_${report.patient_name}.pdf`);
     setLoading(false);
   };

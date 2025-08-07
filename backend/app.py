@@ -959,6 +959,78 @@ def identify_mistakes():
 
         if language == "ar":
             highlight_prompt = f"""
+            أنت مدقق لغوي محترف. حلل النص التالي وحدد جميع الأخطاء الإملائية والنحوية.
+            أعد النتيجة في JSON بهذا الشكل:
+            [
+              {{"text": "الكلمة الخاطئة", "suggestion": "الكلمة الصحيحة"}}
+            ]
+            النص:
+            {input_text}
+            """
+        else:
+            highlight_prompt = f"""
+            You are an expert proofreader. Analyze the following text and identify all grammar/spelling mistakes.
+
+            Return a JSON array like this:
+            [
+              {{ "text": "wrong word or phrase", "suggestion": "corrected word or phrase" }}
+            ]
+
+            ❗ Do NOT include offset or length.
+            Only return the JSON array. No explanations.
+
+            Text:
+            \"\"\"{input_text}\"\"\"
+            """
+
+        # Call GPT
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": highlight_prompt}],
+            temperature=0
+        )
+
+        import json
+        raw_mistakes = json.loads(response.choices[0].message.content.strip())
+
+        # Calculate offsets in Python
+        import re
+        seen = set()
+        mistakes = []
+        for mistake in raw_mistakes:
+            wrong = mistake["text"]
+            suggestion = mistake["suggestion"]
+
+            # Find first unused match
+            for match in re.finditer(re.escape(wrong), input_text):
+                start = match.start()
+                if (wrong, start) not in seen:
+                    seen.add((wrong, start))
+                    mistakes.append({
+                        "text": wrong,
+                        "suggestion": suggestion,
+                        "offset": start,
+                        "length": len(wrong)
+                    })
+                    break  # Stop after first match
+
+        return jsonify({"mistakes": mistakes})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/identify', methods=['POST'])
+def identify_mistakes_old():
+    try:
+        data = request.get_json()
+        input_text = data.get("text", "")
+        language = data.get("language", "en")
+
+        if not input_text.strip():
+            return jsonify({"error": "Empty text provided"}), 400
+
+        if language == "ar":
+            highlight_prompt = f"""
             أنت مدقق لغوي محترف. قم بتحليل النص التالي وحدد الأخطاء الإملائية والنحوية وأخطاء اللغة.
             - **ضع الأخطاء بخط عريض وتحتها خط باللون الأحمر.**
             - **بجانب كل خطأ، اقترح الكلمة الصحيحة داخل قوسين.**
@@ -986,6 +1058,7 @@ def identify_mistakes():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/compile-report-stream", methods=["POST"])
 @jwt_required()

@@ -4,16 +4,20 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: 370px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  padding: 16px;
-  font-family: sans-serif;
   height: fit-content;
-  background-color: #f0f0f0;
+  padding: 16px;
+  border-radius: 12px;
+  z-index: 9999;
+
+  /* Glassmorphism Styles */
+  background: rgba(255, 255, 255, 0.15); /* translucent background */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* light border */
+  backdrop-filter: blur(12px); /* blurred background */
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); /* deeper glassy shadow */
+  font-family: sans-serif;
 }
+
 .send-popup-header h3 {
   font-weight: 600;
   font-size: 19px;

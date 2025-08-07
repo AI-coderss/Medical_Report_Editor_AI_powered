@@ -283,3 +283,24 @@ button.mic-btn1 span {
 .approveBtn {
   background-color: #398d10 !important;
 }
+.error-span {
+  text-decoration: underline;
+  text-decoration-color: red;
+  text-decoration-style: wavy;
+  position: relative;
+  display: inline-block;
+}
+
+.error-correct-button {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  background-color: #f87171;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  z-index: 10;
+}

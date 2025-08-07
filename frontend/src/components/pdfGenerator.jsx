@@ -13,7 +13,7 @@ const formatPDFText = (rawText) => {
     .trim();
 };
 
-export const generatePDFBlob = async (content, language) => {
+export const generatePDFBlob = async (content, language, doctorName) => {
   const isArabic = language === "ar";
 
   const doc = new jsPDF({
@@ -50,7 +50,6 @@ export const generatePDFBlob = async (content, language) => {
 
   addHeaderAndFooter();
   doc.setFontSize(12);
-
   doc.setFont(isArabic ? "Amiri" : "helvetica", "normal");
 
   const formattedContent = formatPDFText(content);
@@ -75,13 +74,13 @@ export const generatePDFBlob = async (content, language) => {
       doc.setFont(isArabic ? "Amiri" : "helvetica", "bold");
 
       const split = doc.splitTextToSize(text, contentWidth);
-      split.forEach((l) => {
+      for (const l of split) {
         doc.text(l, xPos, y, {
           align: isArabic ? "right" : "left",
           lang: isArabic ? "ar" : "en",
         });
         y += lineHeight;
-      });
+      }
 
       if (!isArabic) doc.setFont("helvetica", "normal");
       continue;
@@ -110,20 +109,62 @@ export const generatePDFBlob = async (content, language) => {
     }
   }
 
+  // --- Signature Box ---
+  const signatureText = isArabic
+    ? `تم التوقيع إلكترونيًا بواسطة الدكتور ${doctorName}`
+    : `Electronically Signed by Dr. ${doctorName}`;
+
+  const sigBoxX = margin;
+  const sigBoxY = y + 10; // margin-top: 1rem
+  const sigBoxWidth = contentWidth;
+  const sigBoxHeight = 10;
+
+  // Background
+  doc.setFillColor(230, 244, 234); // #e6f4ea
+  doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight, "F");
+
+  // Border-left
+  doc.setDrawColor(46, 125, 50); // #2e7d32
+  doc.setLineWidth(1);
+  doc.line(sigBoxX, sigBoxY, sigBoxX, sigBoxY + sigBoxHeight);
+
+  // Text
+  doc.setTextColor(46, 125, 50); // #2e7d32
+  doc.setFont(isArabic ? "Amiri" : "helvetica", "bold");
+  doc.text(
+    signatureText,
+    isArabic ? pageWidth - margin : margin + 2,
+    sigBoxY + 7,
+    {
+      align: isArabic ? "right" : "left",
+      lang: isArabic ? "ar" : "en",
+    }
+  );
+
+  y = sigBoxY + sigBoxHeight + 5;
+
+  // --- Centered Stamp ---
   const stampImg = "/stamp.png";
   const stampWidth = 40;
   const stampHeight = 40;
 
-  if (y + stampHeight + 10 > pageHeight - footerHeight) {
-    doc.addPage();
-    addHeaderAndFooter();
-    y = headerHeight + 10;
-  }
+  const stampX = (pageWidth - stampWidth) / 2; // center horizontally
+  const stampY = y + 10; // margin-top: 1rem
 
-  doc.addImage(stampImg, "PNG", margin, y, stampWidth, stampHeight);
+  // Add padding effect around stamp
+  const padding = 2;
+  doc.setFillColor(255, 255, 255); // white background for padding
+  doc.rect(
+    stampX - padding,
+    stampY - padding,
+    stampWidth + padding * 2,
+    stampHeight + padding * 2,
+    "F"
+  );
 
-  // Wait to simulate font rendering
+  doc.addImage(stampImg, "PNG", stampX, stampY, stampWidth, stampHeight);
+
   await new Promise((res) => setTimeout(res, 300));
 
-  return doc.output("datauristring"); // base64 PDF string
+  return doc.output("datauristring");
 };

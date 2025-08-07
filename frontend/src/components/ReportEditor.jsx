@@ -8,6 +8,7 @@ import {
   Modifier,
   convertFromRaw,
   convertToRaw,
+  SelectionState,
 } from "draft-js";
 import "draft-js/dist/Draft.css";
 import ReactMarkdown from "react-markdown";
@@ -58,30 +59,128 @@ const errorStrategy = (contentBlock, callback) => {
   }
 };
 
-// ✅ Component to underline mistakes
-const ErrorSpan = (props) => (
-  <span className="error-span" title={`Correction: ${props.children}`}>
-    {props.children}
-  </span>
-);
+const ErrorSpan = (props) => {
+  const { children, start, end, contentState, entityKey, correctMistake } =
+    props;
+  const blockKey = props.blockKey || props.decoratedText?.blockKey;
+
+  const suggestion = contentState.getEntity(entityKey).getData()?.suggestion;
+
+  return (
+    <span className="error-span">
+      {children}
+      <button
+        className="error-correct-button"
+        onClick={() => correctMistake(blockKey, start, end, suggestion)}
+      >
+        Correct
+      </button>
+    </span>
+  );
+};
 
 function ReportEditor() {
   // ✅ Memoize `decorator` to prevent re-renders
-  const decorator = useMemo(
-    () =>
-      new CompositeDecorator([
-        {
-          strategy: errorStrategy,
-          component: ErrorSpan,
+  const getMistakeDecorator = (correctMistake) =>
+    new CompositeDecorator([
+      {
+        strategy: (contentBlock, callback, contentState) => {
+          contentBlock.findEntityRanges((character) => {
+            const entityKey = character.getEntity();
+            return (
+              entityKey !== null &&
+              contentState.getEntity(entityKey).getType() === "MISTAKE"
+            );
+          }, callback);
         },
-      ]),
-    []
-  );
+        component: (props) => {
+          const { contentState, entityKey, offsetKey, children } = props;
+          const suggestion = contentState
+            .getEntity(entityKey)
+            .getData()?.suggestion;
+          const originalText = contentState
+            .getEntity(entityKey)
+            .getData()?.originalText;
 
-  // ✅ Initialize State
-  const [editorState, setEditorState] = useState(
-    EditorState.createEmpty(decorator)
-  );
+          const start = parseInt(offsetKey.split("-")[1], 10);
+          const textLength = children?.[0]?.props?.text?.length || 0;
+          const end = start + textLength;
+
+          return (
+            <span className="error-span">
+              {children}
+              <button
+                className="error-correct-button"
+                onClick={() =>
+                  correctMistake(children?.[0]?.props?.text, suggestion)
+                }
+              >
+                {suggestion}
+              </button>
+            </span>
+          );
+        },
+      },
+    ]);
+  const editorStateRef = useRef();
+
+  const correctMistake = (mistakeText, suggestion) => {
+    // console.log("text ", mistakeText, suggestion);
+    const contentState = editorStateRef.current.getCurrentContent();
+    const text = contentState.getPlainText();
+    const blockMap = contentState.getBlockMap();
+    let newContentState = contentState;
+    let found = false;
+    console.log(mistakeText);
+    // console.log("blockmap", blockMap);
+    // console.log("plain text", text);
+    blockMap.forEach((block) => {
+      if (found) return; // skip once found
+
+      const text = block.getText();
+      console.log("Text:", text);
+      const blockKey = block.getKey();
+      const start = text.indexOf(mistakeText);
+      console.log(start);
+      if (start !== -1) {
+        const selection = SelectionState.createEmpty(blockKey).merge({
+          anchorOffset: start,
+          focusOffset: start + mistakeText.length,
+        });
+
+        newContentState = Modifier.replaceText(
+          contentState,
+          selection,
+          suggestion
+        );
+
+        found = true;
+        console.log("found text ", found);
+      }
+    });
+
+    if (found) {
+      const newEditorState = EditorState.push(
+        editorStateRef.current,
+        newContentState,
+        "insert-characters"
+      );
+      console.log(
+        "[Editor state in correct mistake]",
+        newEditorState.getCurrentContent().getPlainText()
+      );
+      setEditorState(newEditorState);
+      editorStateRef.current = newEditorState;
+      console.log(
+        "[Editor state ref in correct mistake]",
+        editorStateRef.current.getCurrentContent().getPlainText()
+      );
+      // console.log("✅ Replacement applied.");
+    } else {
+      console.warn("❌ Mistake text not found:", mistakeText);
+    }
+  };
+
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [loading, setLoading] = useState(false);
   const [mistakes, setMistakes] = useState(null);
@@ -99,10 +198,24 @@ function ReportEditor() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [liveStreamText, setLiveStreamText] = useState("");
   const [showSendPopup, setShowSendPopup] = useState(false);
+  const [typingTimer, setTypingTimer] = useState(null);
+  const [autoMistakes, setAutoMistakes] = useState([]);
+  const [showFixAllButton, setShowFixAllButton] = useState(false);
 
+  // ✅ Initialize State
+  const decorator = useMemo(() => getMistakeDecorator(correctMistake), []);
+  const [editorState, setEditorState] = useState(
+    EditorState.createEmpty(decorator)
+  );
+  editorStateRef.current = editorState;
   const pdfRef = useRef();
   const printRef = useRef();
-
+  // console.log(
+  //   "const content =",
+  //   editorState.getCurrentContent(),
+  //   "const plainText =",
+  //   editorState.getCurrentContent().getPlainText()
+  // );
   // Live Mic CODE
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -226,7 +339,7 @@ function ReportEditor() {
       setShowSendPopup(true);
     });
   };
-
+  // used for dictation
   const updateEditor = (text) => {
     const content = editorState.getCurrentContent();
     const selection = editorState.getSelection();
@@ -248,6 +361,12 @@ function ReportEditor() {
 
     handleEditorChange(newEditorState);
   };
+
+  // useEffect(() => {
+  //   console.log("editor state changed");
+  //   editorStateRef.current = editorState;
+  // }, [editorState]);
+
   // ✅ Restore saved report from LocalStorage when component loads
   useEffect(() => {
     const savedContent = localStorage.getItem(REPORT_STORAGE_KEY);
@@ -319,8 +438,108 @@ function ReportEditor() {
   };
 
   // ✅ Handle Editor Change
+  // const hasRunRef = useRef(false); // Track if detection has run
+
   const handleEditorChange = (state) => {
     setEditorState(state);
+    editorStateRef.current = state;
+    // console.log(
+    //   "[on editor state change:]",
+    //   state.getCurrentContent().getPlainText()
+    // );
+    // Only proceed if we haven’t already run the detection
+    // if (hasRunRef.current) return;
+
+    if (typingTimer) clearTimeout(typingTimer);
+
+    const timer = setTimeout(() => {
+      const content = editorStateRef.current.getCurrentContent();
+      const plainText = content.getPlainText();
+
+      // console.log("[Plain text from api call]", plainText);
+
+      if (plainText.trim()) {
+        detectMistakesInText(plainText);
+        // hasRunRef.current = true; // ✅ Mark that it has been run
+      }
+    }, 2500);
+
+    setTypingTimer(timer);
+  };
+
+  const detectMistakesInText = async (text) => {
+    try {
+      const response = await fetch(
+        "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, language }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && Array.isArray(data?.mistakes)) {
+        const rawContent = ContentState.createFromText(text);
+        let contentState = rawContent;
+        let newEditorState = EditorState.createWithContent(
+          contentState,
+          decorator
+        );
+
+        data.mistakes.forEach((m) => {
+          const entityKey = contentState
+            .createEntity("MISTAKE", "MUTABLE", {
+              suggestion: m.suggestion,
+              originalText: m.text,
+            })
+            .getLastCreatedEntityKey();
+
+          const selection = SelectionState.createEmpty(
+            contentState.getFirstBlock().getKey()
+          ).merge({
+            anchorOffset: m.offset,
+            focusOffset: m.offset + m.length,
+          });
+
+          contentState = Modifier.applyEntity(
+            contentState,
+            selection,
+            entityKey
+          );
+        });
+
+        newEditorState = EditorState.push(
+          editorState,
+          contentState,
+          "apply-entity"
+        );
+        setEditorState(newEditorState);
+        setAutoMistakes(data.mistakes);
+      }
+    } catch (err) {
+      console.error("Auto mistake detection failed", err);
+    }
+  };
+
+  const correctAllAutoMistakes = () => {
+    let text = editorState.getCurrentContent().getPlainText();
+
+    autoMistakes
+      .sort((a, b) => b.start - a.start) // Reverse to not mess up indices
+      .forEach((mistake) => {
+        text =
+          text.slice(0, mistake.start) +
+          mistake.suggestion +
+          text.slice(mistake.end);
+      });
+
+    const newContent = ContentState.createFromText(text);
+    const freshDecorator = getMistakeDecorator(correctMistake);
+    setEditorState(EditorState.createWithContent(newContent, freshDecorator));
+    setAutoMistakes([]);
+    setShowFixAllButton(false);
   };
 
   // ✅ Fully Functional Formatting
@@ -489,7 +708,10 @@ function ReportEditor() {
 
       // Update editor
       const contentState = ContentState.createFromText(cleanedText);
-      setEditorState(EditorState.createWithContent(contentState, decorator));
+      const freshDecorator = getMistakeDecorator(correctMistake);
+      setEditorState(
+        EditorState.createWithContent(contentState, freshDecorator)
+      );
 
       // Save for download/export
       setFormattedMarkdown(cleanedText);
@@ -499,7 +721,7 @@ function ReportEditor() {
 
       // Mistake detection request (optional)
       const mistakeResponse = await fetch(
-        "https://medical-report-editor-ai-powered-backend.onrender.com/identify-mistakes",
+        "https://medical-report-editor-ai-powered-backend.onrender.com/identify",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -647,13 +869,21 @@ function ReportEditor() {
           <button className="edit-btn clear-btn" onClick={clearEditorContent}>
             {labels.clear}
           </button>
+          {showFixAllButton && (
+            <button
+              onClick={correctAllAutoMistakes}
+              className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition"
+            >
+              ✅ Correct All
+            </button>
+          )}
 
           {/* Sidebar Toggle Button */}
           <button
             className="edit-btn toggle-sidebar-btn"
             onClick={toggleSidebar}
           >
-            {sidebarOpen ? <VisibilityOff /> : <Visibility />}
+            {sidebarOpen ? <Visibility /> : <VisibilityOff />}
           </button>
         </div>
       </div>
