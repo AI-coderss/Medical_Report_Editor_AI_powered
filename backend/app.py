@@ -1523,66 +1523,65 @@ def extract_report_fields():
         return jsonify({"error": "No transcript provided"}), 400
 
     if language == "ar":
-        instructions = """
-Generate a well-structured medical report based on the following transcript.
-Translate the *content only* into formal Arabic.
-Keep the section headings exactly as shown (in English).
-Do NOT use Markdown formatting, symbols like '-', '*', etc.
+        instructions = f"""
+        أنت مساعد طبي محترف. استخرج تقريرًا طبيًا منظمًا بناءً على النص التالي. 
+        اكتب العناوين والمحتوى بالكامل باللغة العربية الفصحى الرسمية.
+        لا تستخدم أي تنسيق Markdown أو رموز مثل "-" أو "*" أو النقاط.
 
-If a section is not mentioned, leave it blank.
+        لا تقم باختراع أي معلومات غير موجودة في النص. إذا لم يتم ذكر قسم معين، فاتركه فارغًا.
 
-Transcript:
-""" + transcript + """
+        النص:
+        {transcript}
 
-Format (do not change headings):
-Chief Complaint:
-...
+        الصيغة المطلوبة (لا تغيّر العناوين):
+        الشكوى الرئيسية:
+        ...
 
-Present Illness:
-...
+        تاريخ المرض الحالي:
+        ...
 
-Medical History:
-...
+        التاريخ الطبي:
+        ...
 
-Family History:
-...
+        التاريخ العائلي:
+        ...
 
-Personal History:
-...
+        التاريخ الشخصي:
+        ...
 
-System Review:
-...
-"""
+        مراجعة الأنظمة:
+        ...
+        """
     else:
         instructions = f"""
-Generate a well-structured and formatted medical report based on the following transcript.
+        You are a professional medical assistant. Extract a clean, structured medical report from the following transcript.
+        Write everything — including the section headings and content — in formal English.
+        Do not use any Markdown formatting or symbols like "-" or "*".
 
-Do NOT use Markdown formatting, symbols like '-', '*', etc.
+        Do not hallucinate or assume any information not explicitly mentioned. If a section is missing, leave it blank.
 
-If a section is not mentioned, leave it blank.
+        Transcript:
+        {transcript}
 
-Transcript:
-{transcript}
+        Format (do not change the headings):
+        Chief Complaint:
+        ...
 
-Format:
-Chief Complaint:
-...
+        Present Illness:
+        ...
 
-Present Illness:
-...
+        Medical History:
+        ...
 
-Medical History:
-...
+        Family History:
+        ...
 
-Family History:
-...
+        Personal History:
+        ...
 
-Personal History:
-...
-
-System Review:
-...
-"""
+        System Review:
+        ...
+        """
 
     response = client.chat.completions.create(
         model="gpt-4",

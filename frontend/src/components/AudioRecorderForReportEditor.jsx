@@ -40,6 +40,7 @@ const AudioRecorderForReportEditor = ({
     });
     const fd = new FormData();
     fd.append("audio_data", audioFile);
+    fd.append("language", language === "ar" ? "ar" : "en");
 
     try {
       const { data: transData } = await axios.post(
