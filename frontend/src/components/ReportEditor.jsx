@@ -462,7 +462,7 @@ function ReportEditor() {
         detectMistakesInText(plainText);
         // hasRunRef.current = true; // ✅ Mark that it has been run
       }
-    }, 2500);
+    }, 2000);
 
     setTypingTimer(timer);
   };
